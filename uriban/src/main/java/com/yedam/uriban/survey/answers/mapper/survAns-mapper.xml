@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yedam.uriban.survey.answers.mapper.SurvAnsMapper">
+	<select id="selectSurvAnswersList" resultType="SurvAnswersVO">
+		SELECT answer_no
+				, question_no
+				, answer_type
+				, answer_content
+				, ans_mark_no
+		FROM survey_answers
+		ORDER BY answer_no
+	</select>
+	
+	<select id="selectChartAnswers" resultType="map">
+		SELECT a.answer_no AS "answerNo"
+				, COUNT(response_no) AS "responseCnt"
+				, SUM(CASE WHEN  p.account_type='E501' THEN 1 ELSE 0 END) AS "respStuCnt"
+	       		, SUM(CASE WHEN  p.account_type='E502' THEN 1 ELSE 0 END) AS "respParCnt"
+	        	, a.answer_content AS "answerContent"
+		FROM survey_answers a LEFT OUTER JOIN response_answers r 
+	  										ON (a.answer_no = r.answer_no)
+							  LEFT OUTER JOIN survey_people p 
+											ON (r.surv_man_no = p.surv_man_no)
+		WHERE question_no = #{questionNo}
+		GROUP BY a.answer_no, a.answer_content
+		ORDER BY a.answer_no
+	</select>
+	
+	<insert id="insertSurvAnswers" parameterType="SurvAnswersVO" useGeneratedKeys="true">
+		<selectKey keyProperty="answerNo"
+ 			   		resultType="int"
+ 			   		order="BEFORE">
+	 		SELECT NVL(MAX(answer_no),0) + 1
+	 		FROM survey_answers
+ 		</selectKey>
+		INSERT INTO survey_answers
+					(
+						answer_no
+						, question_no
+						, answer_type
+						, answer_content
+						, ans_mark_no
+					)
+		VALUES
+					(
+						#{answerNo}
+						, #{questionNo}
+						<choose>
+							<when test="answerType != null and !answerType.equals('')">
+								, #{answerType}
+							</when>
+							<otherwise>
+								, '1'
+							</otherwise>
+						</choose>
+						, #{answerContent}
+						, #{ansMarkNo}
+					)
+	</insert>
+	
+	<update id="updateSurvAnswers" parameterType="SurvAnswersVO" useGeneratedKeys="true">
+		UPDATE survey_answers
+		<set>
+			<if test="answerType != null and !answerType.equals('')">
+				answer_type = #{answerType},
+			</if>
+			<if test="answerContent != null and !answerContent.equals('')">
+				answer_content = #{answerContent},
+			</if>
+			<if test="ansMarkNo != null and !ansMarkNo.equals('')">
+				ans_mark_no = #{ansMarkNo}
+			</if>
+		</set>
+		WHERE answer_no = #{answerNo}
+	</update>
+	
+	<!-- 설문조사 삭제 -->
+	<delete id="deleteSurvAnswers" parameterType="int">
+		DELETE
+		FROM survey_answers
+		WHERE question_no IN(SELECT question_no 
+							FROM survey_question 
+							WHERE surv_no = #{survNo})
+	</delete>
+	
+	<!-- 선택 삭제 -->
+	<delete id="deleteSelAnswers" parameterType="survAnswersVO">
+		DELETE
+		FROM survey_answers
+		WHERE question_no IN (SELECT question_no 
+							FROM survey_question 
+							WHERE question_no = #{questionNo})
+	</delete>
+	
+	<!-- 보기 삭제 -->
+	<delete id="deleteAnswers" parameterType="int">
+		DELETE
+		FROM survey_answers
+		WHERE answer_no = #{answerNo}
+	</delete>
+</mapper>

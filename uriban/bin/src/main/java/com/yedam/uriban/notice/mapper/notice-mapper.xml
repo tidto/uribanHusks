@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+  
+<mapper namespace="com.yedam.uriban.notice.mapper.NoticeMapper">
+	<!-- 전체 조회 -->
+	<select id="selectNoticeList" resultType="NoticeVO">
+		SELECT n.notice_no
+			,n.notice_date
+			,s.sub_cd_nm AS notice_type
+			,n.notice_title
+			,n.notice_content
+		FROM notice n join sub_cd s 
+			ON(n.notice_type = s.sub_cd) 
+<!-- 		WHERE n.class_id = #{classId} -->
+		ORDER BY n.notice_date DESC
+	</select>
+	
+	<!-- 단건 조회 -->
+	<select id="selectNoticeInfo" resultType="NoticeVO">
+		SELECT notice_no
+			,notice_date
+			,notice_type
+			<if test="noticeTitle != null and !noticeTitle.equals('')">
+				,notice_title
+			</if>
+			,notice_content
+		FROM notice
+		WHERE notice_no = #{noticeNo}
+<!-- 		AND class_id = #{classId} -->
+	</select>
+	
+	<!-- 공지 등록 -->
+	<insert id="insertNotice" parameterType="NoticeVO">
+		<selectKey keyProperty="noticeNo" resultType="int" order="BEFORE">
+			SELECT NVL(MAX(notice_no),0) + 1
+			FROM notice
+		</selectKey>
+		INSERT INTO notice(
+					notice_no
+					,class_id
+					,notice_date
+					,notice_type
+					<if test="noticeTitle != null and !noticeTitle.equals('')">
+						,notice_title
+					</if>
+					,notice_content
+				)
+				VALUES(
+					#{noticeNo}
+					,#{classId}
+					,sysdate
+					,#{noticeType}
+					<if test="noticeTitle != null and !noticeTitle.equals('')">
+						,#{noticeTitle}
+					</if>
+					,#{noticeContent}
+				)
+	</insert>
+	
+	<!-- 공지 수정 /제목 내용만 -->
+	<update id="updateNotice" parameterType="NoticeVO">
+		UPDATE 
+			<set>
+				<if test="noticeTitle != null and !noticeTitle.equals('')">
+					#{noticeTitle},
+				</if>
+				<if test="noticeContent != null and !noticeContent.equals('')">
+					#{noticeContent}
+				</if>
+			</set>
+		WHERE notice_no = #{noticeNo}
+	</update>
+	
+	<!-- 공지 삭제 noticeNo -->
+	<delete id="deleteNotice" parameterType="int">
+		DELETE 
+		FROM notice
+		WHERE notice_no = #{noticeNo}
+	</delete>
+</mapper>

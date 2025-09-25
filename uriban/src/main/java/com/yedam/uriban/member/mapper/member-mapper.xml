@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yedam.uriban.member.mapper.MemberMapper">
+	<!-- 전체 조회 -->
+	<select id="getMemberList" resultType="MemberVO">
+		SELECT MEMBER_ID
+		, MEMBER_NAME
+		, PHONE
+		, BIRTH
+		, EMAIL
+		, FIND_CODENAME(AUTHORITY) AS AUTHORITY
+		, CREATE_DATE
+		, MEMBER_PROFILE
+		, BAN_COUNT
+		, FIND_CODENAME(MEMBER_STATE) AS MEMBER_STATE
+		FROM MEMBER
+		ORDER BY CREATE_DATE DESC
+	</select>
+
+	<!-- 단건 조회 -->
+	<select id="getMemberInfo" resultType="MemberVO">
+		SELECT MEMBER_ID
+		, MEMBER_NAME
+		, PHONE
+		, BIRTH
+		, EMAIL
+		, AUTHORITY
+		, FIND_CODENAME(AUTHORITY) AS AUTH_KOR
+		, CREATE_DATE
+		, MEMBER_PROFILE
+		, BAN_COUNT
+		, FIND_CODENAME(MEMBER_STATE) AS MEMBER_STATE
+		FROM MEMBER
+		WHERE MEMBER_ID = #{memberId}
+	</select>
+	
+	
+	<!-- 아이디 중복 체크 -->
+	<select id="idCheck" parameterType="String" resultType="int">
+		SELECT COUNT(MEMBER_ID) FROM MEMBER WHERE LOWER(MEMBER_ID)= LOWER(#{memberId})
+	</select>
+	
+	<!-- 회원 가입 -->
+	<insert id="insertMember" parameterType="MemberVO">
+		INSERT INTO MEMBER(
+		MEMBER_ID
+		, MEMBER_PW
+		, MEMBER_NAME
+		, PHONE
+		, BIRTH
+		, EMAIL
+		, AUTHORITY
+		<if test="memberProfile != null and !memberProfile.equals('')">
+			, MEMBER_PROFILE
+		</if>
+		)
+		VALUES(
+		#{memberId}
+		, #{memberPw}
+		, #{memberName}
+		, #{phone}
+		, #{birth}
+		, #{email}
+		, #{authority}
+		<if test="memberProfile != null and !memberProfile.equals('')">
+			, #{memberProfile}
+		</if>
+		)
+	</insert>
+	
+
+	<!-- 회원 정보 수정 -->
+	<update id="updateMemberInfo" parameterType="MemberVO">
+		UPDATE MEMBER
+		<set>
+			<if test='email != null and !email.equals("")'>
+				EMAIL = #{email}
+			</if>
+			<if test='phone != null and !phone.equals("")'>
+				, PHONE = #{phone}
+			</if>
+			<if test='memberPw != null and !memberPw.equals("")'>
+				, MEMBER_PW = #{memberPw}
+			</if>
+			<if test='memberProfile != null and !memberProfile.equals("")'>
+				, MEMBER_PROFILE = #{memberProfile}
+			</if>
+			<if test='memberState != null and !memberState.equals("")'>
+				, MEMBER_STATE = #{memberState}
+			</if>
+			WHERE MEMBER_ID = #{memberId}
+		</set>
+	</update>
+
+	<!-- 회원 권한 수정 -->
+	<update id="updateMemberAuth" parameterType="MemberVO">
+		UPDATE MEMBER
+		SET AUTHORITY = 'A102'
+		WHERE MEMBER_ID = #{memberId}
+	</update>
+	
+	<!-- 유저 제한 -->
+	<update id="updateMemBan" parameterType="MemberVO" useGeneratedKeys="true">
+		<selectKey keyProperty="banCount" order="AFTER" resultType="int">
+			SELECT BAN_COUNT
+			FROM MEMBER
+			WHERE MEMBER_ID = #{memberId}
+		</selectKey>
+		UPDATE MEMBER
+		SET
+		BAN_COUNT = BAN_COUNT+1,
+		MEMBER_STATE = 
+			CASE
+			    WHEN MEMBER_STATE = 'A501' THEN #{memberState}
+			    WHEN MEMBER_STATE = 'A502' AND #{memberState} = 'A503' THEN 'A504'
+			    WHEN MEMBER_STATE = 'A503' AND #{memberState} = 'A504' THEN 'A504'
+			    ELSE MEMBER_STATE
+			END
+		WHERE MEMBER_ID = #{memberId}
+	</update>
+
+	<!-- 회원 탈퇴 -->
+	<delete id="deleteMember">
+		DELETE FROM MEMBER
+		WHERE MEMBER_ID = #{memberId}
+	</delete>
+	
+	<!-- 시큐리티 로그인 -->
+	<select id="getUser" resultType="MemberVO">
+		SELECT MEMBER_ID
+				, '{bcrypt}'||MEMBER_PW AS MEMBER_PW
+				, 'ROLE_'||AUTHORITY AS AUTHORITY
+				, FIND_CODENAME(AUTHORITY) AS AUTH_KOR
+				, MEMBER_NAME
+				, MEMBER_PROFILE
+				, MEMBER_STATE
+				, PHONE
+				, BIRTH
+				, EMAIL
+		FROM MEMBER
+		WHERE MEMBER_ID = #{username}
+	</select>
+	
+	<!-- 밴 체크 -->
+	<select id="banCheck" parameterType="String" resultType="String">
+		SELECT FIND_CODENAME(MEMBER_STATE) AS MEMBER_STATE
+		FROM MEMBER 
+		WHERE LOWER(MEMBER_ID)= LOWER(#{memberId})
+	</select>
+</mapper>

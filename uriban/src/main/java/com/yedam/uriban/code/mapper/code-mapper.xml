@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yedam.uriban.code.mapper.CodeMapper">
+	<!-- 알러지 정보 -->
+	<select id="getCodeList" resultType="CodeVO">
+		select sub_cd
+		,sub_cd_nm
+		from sub_cd
+		where
+		ma_cd = #{maCd}
+	</select>
+</mapper>

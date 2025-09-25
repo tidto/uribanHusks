@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yedam.uriban.notice.mapper.NoticeTemplateMapper">
+	
+	<select id="selectNoticeTemplateList" resultType="NoticeTemplateVO">
+		SELECT n.template_no
+			,n.notice_type
+			,FIND_CODENAME(n.notice_type)	AS notice_type_name
+			,n.notice_title
+			,n.notice_content
+			,n.member_id
+			,c.class_id
+			
+		FROM notice_template n 
+		join class c 			ON(n.member_id = c.member_id)
+			
+		WHERE n.member_id = #{memberId}
+		ORDER BY n.template_no DESC
+	</select>
+	
+	<!-- 템플릿 noticeinsert로 불러오기 -->
+	<select id="selectNoticeTemplateInfo" resultType="NoticeTemplateVO">
+		SELECT n.template_no
+			,n.notice_type 
+			,FIND_CODENAME(n.notice_type) AS notice_type_name
+			,n.notice_title
+			,n.notice_content
+			,c.class_id
+			
+		FROM notice_template n 
+		join class c			ON(n.member_id = c.member_id)
+			
+		WHERE 	n.template_no	= #{templateNo}
+		
+	</select>
+	
+	<insert id="insertNoticeTemplate" parameterType="NoticeTemplateVO">
+		<selectKey keyProperty="templateNo" resultType="int" order="BEFORE">
+			SELECT NVL(MAX(template_no),0) + 1
+			FROM notice_template
+		</selectKey>
+		INSERT INTO notice_template(
+				template_no
+				<if test="memberId != null and !memberId.equals('')"> 
+					,member_id
+				</if>
+				,notice_type
+				<if test="noticeTitle != null and !noticeTitle.equals('')"> 
+					,notice_title
+				</if>
+				,notice_content
+			)
+		VALUES (
+				#{templateNo}
+				<if test="memberId != null and !memberId.equals('')"> 
+					,#{memberId}
+				</if>
+				,#{noticeType}
+				<if test="noticeTitle != null and !noticeTitle.equals('')">
+					,#{noticeTitle}
+				</if>
+				,#{noticeContent}
+			)
+	</insert>
+	
+	<update id="updateNoticeTemplate" parameterType="NoticeTemplateVO">
+		UPDATE notice_template
+			<set>
+				<if test="noticeTitle != null and !noticeTitle.equals('')">
+					notice_title = #{noticeTitle},
+				</if>
+				<if test="noticeContent != null and !noticeContent.equals('')">
+					notice_content = #{noticeContent}
+				</if>
+			</set>
+		WHERE template_no = #{templateNo}
+	</update>
+	
+	<delete id="deleteNoticeTemplate" parameterType="int">
+		DELETE 
+		FROM notice_template
+		WHERE template_no = #{templateNo}
+	</delete>
+</mapper>

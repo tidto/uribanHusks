@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yedam.uriban.ban.member.mapper.ClassMemberMapper">
+
+	<select id="selectIdList" resultType="ClassMemberVO">
+		SELECT c.class_id
+			  ,c.member_id			AS compose_id
+			  ,b.member_name		AS compose_name
+			  ,b.authority			AS compose_auth
+		
+		FROM class_member 	c
+		join member 		b 	ON(c.member_id = b.member_id)
+		
+		WHERE c.class_id = #{classId}
+	</select>
+	
+	
+</mapper>

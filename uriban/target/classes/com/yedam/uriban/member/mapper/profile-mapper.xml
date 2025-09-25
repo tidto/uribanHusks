@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper
+	namespace="com.yedam.uriban.member.mapper.ProfileMapper">
+
+	<!-- 파일 정보 생성 -->
+	<update id="insertProfile" parameterType="ProfileVO">
+		<selectKey resultType="int" keyProperty="profileNo"
+			order="BEFORE">
+			  SELECT NVL(MAX(PROFILE_NO), 0) + 1
+			  FROM MEMBER_PROFILE
+		</selectKey>
+		MERGE INTO MEMBER_PROFILE p
+		USING DUAL ON (p.MEMBER_ID = #{memberId})
+		
+		WHEN MATCHED THEN
+			UPDATE
+			SET ORIGINALFILE_NAME = #{originalfileName}
+		    	, SAVEFILE_NAME = #{savefileName}
+
+		WHEN NOT MATCHED THEN
+		INSERT(
+			PROFILE_NO
+			, MEMBER_ID
+			, ORIGINALFILE_NAME
+			, SAVEFILE_NAME
+		)
+		VALUES(
+			#{profileNo}
+			, #{memberId}
+			, #{originalfileName}
+			, #{savefileName}
+		)
+	</update>
+
+
+	
+
+</mapper>

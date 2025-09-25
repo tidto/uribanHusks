@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yedam.uriban.schedule.mapper.ScheduleMapper">
+	<select id="selectScheduleList" resultType="ScheduleVO">
+		SELECT schedule_no
+				, class_id
+				, notice_no
+				, schedule_writer
+				, schedule_category
+				, schedule_title
+				, start_date
+				, end_date
+		FROM academic_schedule
+		ORDER BY schedule_no
+	</select>
+	
+	<select id="selectScheduleInfo" resultType="ScheduleVO">
+		SELECT schedule_no
+				, class_id
+				, notice_no
+				, schedule_writer
+				, schedule_category
+				, schedule_title
+				, start_date
+				, end_date
+		FROM academic_schedule
+		WHERE schedule_no = #{scheduleNo}
+	</select>
+	
+	<select id="getMaxNo" resultType="int">
+		SELECT NVL(MAX(schedule_no), 0) FROM academic_schedule	
+	</select>
+	
+	<insert id="insertSchedule" parameterType="ScheduleVO">
+		INSERT INTO academic_schedule
+				(
+					schedule_no
+					, class_id
+					, notice_no
+					, schedule_writer
+					, schedule_category
+					, schedule_title
+					, start_date
+					, end_date
+				)
+				VALUES
+				(
+					#{ scheduleNo}
+				<!-- 	, (SELECT class_id FROM class WHERE class_id = #{classId})
+					, (SELECT notice_no FROM notice WHERE notice_no = #{noticeNo}) -->
+					, #{classId}
+					, #{noticeNo}
+					, #{scheduleWriter}
+					, #{scheduleCategory}
+					, #{scheduleTitle}
+					, #{startDate}
+					, #{endDate}
+				)
+	</insert>
+		
+	<update id="updateSchedule" parameterType="ScheduleVO">
+		UPDATE academic_schedule
+		<set>
+			<if test="scheduleCategory != null and !scheduleCategory.equals('')">
+				schedule_category = #{scheduleCategory},
+			</if>
+			<if test="scheduleTitle != null and !scheduleTitle.equals('')">
+				schedule_title = #{scheduleTitle},
+			</if>
+			<if test="startDate != null">
+				start_date = #{startDate},
+			</if>
+			<if test="endDate != null">
+				end_date = #{endDate}
+			</if>
+		</set>
+		WHERE schedule_no = #{scheduleNo}
+	</update>
+	
+	<delete id="deleteSchedule" parameterType="int">
+		DELETE FROM academic_schedule
+		WHERE TO_NUMBER(schedule_no) = #{scheduleNo}
+	</delete>
+</mapper>

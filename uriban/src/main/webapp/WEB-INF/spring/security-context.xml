@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:security="http://www.springframework.org/schema/security"
+	xsi:schemaLocation="http://www.springframework.org/schema/security http://www.springframework.org/schema/security/spring-security-5.3.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.3.xsd">
+		
+	<!-- security가 적용되면 안되는 경우 -->
+	
+	<security:http pattern="/resources/**" security="none" />
+	<security:http pattern="/assets/**" security="none" />
+
+	<security:http pattern="/myassets/**" security="none" />
+	<security:http pattern="/homeview/**" security="none" />
+	<security:http pattern="/security/**" security="none" />
+		
+<!-- 	<security:http pattern="/img/**" security="none" />
+	<security:http pattern="/like/**" security="none" />
+ -->
+	<security:http>
+	
+		<!-- 누구나 접근 가능 -->
+		<security:intercept-url pattern="/" access="permitAll()" />
+		
+		<!-- 로그인하지않은 사용자만 접근 가능 -->
+		<security:intercept-url pattern="/signup/**" access="isAnonymous()" />
+		<security:intercept-url pattern="/login" access="isAnonymous()" />
+		
+		<!-- 권한에 따라 접근가능 -->
+		
+		<!--  A101 : 관리자  -->
+		<security:intercept-url pattern="/admin/**" access="hasAnyRole('A101')" />
+		<security:intercept-url pattern="/cert/**" access="hasAnyRole('A101')" />
+			
+		<!--  A102 : 교사  -->
+		<security:intercept-url pattern="/albumInsert" access="hasAnyRole('A102')" />
+		
+		<!-- A102 : 교사, A104: 학생  -->
+		<security:intercept-url pattern="/testBank/img/**" access="hasAnyRole('A102','A104')" />
+		<security:intercept-url pattern="/testBank/**" access="hasAnyRole('A102')" />
+		
+		<!-- 로그인한 사용자 누구나 접근 가능 -->
+		<security:intercept-url pattern="/**" access="isAuthenticated()" />
+		
+		<security:form-login
+			username-parameter="memberId"
+	        password-parameter="memberPw"
+	        login-processing-url="/login"
+	        login-page="/login"
+	        default-target-url="/myhome"/>
+		
+		<security:logout 
+			logout-success-url="/" />
+	</security:http>  
+	
+	
+	<bean id="userDetailsService" class="com.yedam.uriban.member.service.CustomerUserDetailsService"/>
+	<bean id="bcryptPasswordEncoder" class="org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder" />
+	
+	<security:authentication-manager>
+		<security:authentication-provider user-service-ref="userDetailsService"/>
+	</security:authentication-manager>
+
+</beans>

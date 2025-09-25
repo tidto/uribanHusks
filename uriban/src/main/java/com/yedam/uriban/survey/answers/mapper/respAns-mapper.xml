@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yedam.uriban.survey.answers.mapper.RespAnsMapper">
+	<select id="selectRespAnswersInfo" resultType="RespAnswersVO">
+		SELECT COALESCE(r.answer_no, a.question_no) as answer_no
+		FROM response_answers r 
+		JOIN survey_answers a 
+		ON (r.answer_no = a.answer_no)
+		WHERE r.surv_man_no = #{survManNo} 
+	</select>
+	
+	<select id="selectAnswerAll" resultType="RespAnswersVO">
+		SELECT NVL(r.answer_no, 0) AS answer_no, p.acoount_type
+		FROM response_answers r JOIN survey_people p ON (r.surv_man_no = p.surv_man_no) 
+								JOIN survey s ON (s.surv_no = p.surv_no) 
+		WHERE p.surv_no = #{survNo}
+	</select>
+	
+	<insert id="insertRespAnswers" parameterType="RespAnswersVO">
+		<selectKey keyProperty="responseNo"
+					resultType="int"
+					order="BEFORE">
+			SELECT NVL(MAX(response_no), 0) + 1 FROM response_answers
+		</selectKey>
+		INSERT INTO response_answers
+				(
+					response_no
+					, surv_man_no
+					, answer_no
+				)
+		VALUES			
+				(
+					#{responseNo}
+					, #{survManNo}
+					, #{answerNo}
+				)
+	</insert>
+</mapper>

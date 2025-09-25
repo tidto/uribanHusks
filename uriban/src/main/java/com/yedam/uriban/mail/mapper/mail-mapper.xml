@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yedam.uriban.mail.mapper.MailMapper">
+
+	<!-- 보낸 메일 전체 목록 -->
+	<select id="selectMailList" resultType="MailVO">
+		SELECT m.mail_no
+			  ,m.class_id
+			  ,m.mail_type
+		 	  ,FIND_CODENAME(m.mail_type) 	AS mail_type_name
+		 	  ,m.mail_title
+			  ,m.mail_contents
+			  ,m.mail_send_date
+			  ,m.sender_id
+			  ,m.notice_no	
+			  ,LISTAGG(r.mail_receiver)
+							WITHIN GROUP (ORDER BY r.mail_receiver)
+							AS receiver_id
+			  ,LISTAGG(b.member_name)
+							WITHIN GROUP (ORDER BY b.member_name)
+							AS receiver_name
+			
+		FROM mail m
+			join mail_receivers r 	ON(m.mail_no = r.mail_no)
+			join member b 			ON(r.mail_receiver = b.member_id)
+			
+		WHERE 	m.class_id = #{classId}
+		AND		m.sender_id = #{senderId}
+		AND		m.sender_id != r.mail_receiver
+		
+		GROUP BY m.mail_no
+				  ,m.class_id
+				  ,m.mail_type
+			 	  ,FIND_CODENAME(m.mail_type)
+			 	  ,m.mail_title
+				  ,m.mail_contents
+				  ,m.mail_send_date
+				  ,m.sender_id
+				  ,m.notice_no	
+		
+		ORDER BY m.mail_send_date DESC
+	</select>
+	
+	<!-- 보낸 메일 단일 정보 -->
+	<select id="selectMailInfo" resultType="MailVO">
+		SELECT m.mail_no
+				,m.class_id
+				,m.mail_type
+				,FIND_CODENAME(m.mail_type) 	AS mail_type_name
+				,m.mail_title
+				,m.mail_contents
+				,m.mail_send_date
+				,m.sender_id
+				,m.notice_no
+				,n.notice_type 					AS notice_set
+				,LISTAGG(r.mail_receiver, ', ')
+							WITHIN GROUP (ORDER BY r.mail_receiver)
+							AS receiver_id
+				,LISTAGG(b.member_name, ', ')
+							WITHIN GROUP (ORDER BY b.member_name)
+							AS receiver_name
+			
+		FROM mail m
+			join mail_receivers r 		ON(m.mail_no = r.mail_no)
+			join member b 				ON(r.mail_receiver = b.member_id)
+			left outer join notice n	ON(m.notice_no = n.notice_no)
+			
+		WHERE m.mail_no = #{mailNo}
+		
+		GROUP BY m.mail_no
+					,m.class_id
+					,m.mail_type
+					,FIND_CODENAME(m.mail_type)
+					,m.mail_title
+					,m.mail_contents
+					,m.mail_send_date
+					,m.sender_id
+					,m.notice_no
+					,n.notice_type
+	</select>
+	
+	<!-- 매일 보내기 / 수신자 다수 -->
+	<insert id="insertMailInfo" parameterType="MailVO">
+		<selectKey keyProperty="mailNo" resultType="int" order="BEFORE">
+			SELECT NVL(MAX(mail_no),0) + 1
+			FROM mail
+		</selectKey>
+		INSERT 
+		INTO mail( mail_no
+				,class_id
+				,mail_type
+				,mail_title
+				,mail_contents
+				,mail_send_date
+				,sender_id
+				,notice_no
+			)
+		VALUES(
+				#{mailNo}
+				,#{classId}
+				,#{mailType}
+				,#{mailTitle}
+				,#{mailContents}
+				,sysdate
+				,#{senderId}
+				<choose>
+					<when test="noticeNo != null and !noticeNo.equals('')">
+						, #{noticeNo}
+					</when>
+					<otherwise>
+						, 0
+					</otherwise>
+				</choose>
+			)
+	</insert>
+	
+	<!-- XX 보낸 메일 mailNo에 따라 삭제  -->
+	<delete id="deleteMailInfo" parameterType="int">
+		DELETE 
+		FROM mail 
+		WHERE mail_no = #{mailNo}
+	</delete>
+	
+	
+</mapper>

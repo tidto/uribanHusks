@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yedam.uriban.mail.mapper.MailReceiverMapper">
+
+	<!-- 받은 메일 전체 조회 -->
+	<select id="selectReceiveMailList" resultType="MailReceiverVO">
+		SELECT r.mail_re_no
+			,r.mail_receiver
+			,r.read_check
+			,FIND_CODENAME(r.read_check) AS read_check_name
+			,r.mail_no
+			,m.mail_title                AS receive_title
+			,m.mail_send_date            AS receive_date
+			,m.mail_type
+			,FIND_CODENAME(m.mail_type)  AS mail_type_name
+			,m.class_id
+			,m.sender_id
+			,b.member_name               AS sender_name
+			
+		FROM mail_receivers r
+		join mail m ON(r.mail_no = m.mail_no)
+		join member b ON(m.sender_id = b.member_id)
+		
+		WHERE  	m.class_id = #{classId}
+		AND 	r.mail_receiver = #{mailReceiver}
+		<!-- 나에게 보낸 편지함 제외하는 where -->
+		AND 	r.mail_receiver != m.sender_id
+
+		ORDER BY m.mail_send_date DESC
+	</select>
+	
+	
+	<!-- 받은 메일 단건 조회 -->
+	<select id="selectReceiveMailInfo" resultType="MailReceiverVO">
+		SELECT r.mail_re_no
+			,r.mail_receiver
+			,r.read_check
+			,FIND_CODENAME(r.read_check)	AS read_check_name
+			,r.mail_no
+			,m.mail_title                	AS receive_title
+			,m.mail_contents				AS receive_contents
+			,m.mail_send_date				AS receive_date
+			,m.mail_type
+			,FIND_CODENAME(m.mail_type)  	AS mail_type_name
+			,m.class_id
+			,m.sender_id
+			,b.member_name 					AS sender_name
+			,FIND_CODENAME(b.authority)  	AS sender_authority
+			,m.notice_no
+			,n.notice_type 				AS notice_set
+			
+		FROM mail_receivers r
+		join mail m				ON(r.mail_no = m.mail_no)
+		join member b 			ON(m.sender_id = b.member_id)
+		left outer join notice n		ON(m.notice_no = n.notice_no)
+		
+		WHERE r.mail_re_no 	= #{mailReNo}
+	</select>
+	
+	<!-- 나에게 쓴 메일 전체 조회 -->
+	<select id="selectMailToMeList" resultType="MailReceiverVO">
+		SELECT r.mail_re_no
+			,r.mail_receiver
+			,r.read_check
+			,FIND_CODENAME(r.read_check) AS read_check_name
+			,m.class_id
+			,r.mail_no
+			,m.mail_title                AS receive_title
+			,m.mail_send_date            AS receive_date
+			,m.mail_type
+			,FIND_CODENAME(m.mail_type)  AS mail_type_name
+			,m.sender_id
+			,b.member_name               AS sender_name
+			
+		FROM mail_receivers r
+		join mail m 			ON(r.mail_no = m.mail_no)
+		join member b 			ON(m.sender_id = b.member_id)
+		
+    	WHERE 	m.class_id 			= #{classId}
+		AND 	r.mail_receiver 	= #{mailReceiver}
+		<!-- 나에게 보낸 편지만 보이게 하는 where -->
+		AND 	r.mail_receiver 	= m.sender_id
+		
+		ORDER BY m.mail_send_date DESC
+	</select>
+	
+	
+	<!-- 메일 수신자 여러명 고려 -->
+	<insert id="insertReceiverInfo" parameterType="MailReceiverVO">
+		<selectKey keyProperty="mailReNo" resultType="int" order="BEFORE">
+			SELECT NVL(MAX(mail_re_no), 0) + 1
+			FROM mail_receivers
+		</selectKey>
+		INSERT 
+		INTO mail_receivers(
+							mail_re_no
+							,mail_no
+							,read_check
+							,mail_receiver
+						)	
+					VALUES(
+							#{mailReNo}
+							,#{mailNo}
+							,'F201'
+							,#{mailReceiver}
+						)
+	</insert>
+	
+	<!-- 읽었을때 update 자동 실행 read_check => 1 -->
+	<update id="updateReceiverInfo" parameterType="int">
+		UPDATE mail_receivers
+		SET	read_check = 'F202'
+		WHERE mail_re_no = #{mailReNo}
+	</update>
+	
+	<!-- mail_re_no -->
+	<delete id="deleteReceiverInfo" parameterType="int">
+		DELETE 
+		FROM mail_receivers
+		WHERE mail_re_no = #{mailReNo}
+	</delete>
+	
+	
+	<!-- mail header 안읽은 메일 표시 4개 -->
+	<select id="selectHeaderList" resultType="MailReceiverVO">
+		SELECT r.mail_re_no
+			,r.mail_receiver
+			,m.mail_send_date            AS receive_date
+			,FIND_CODENAME(m.mail_type)  AS mail_type_name
+			,m.class_id
+			,b.member_name               AS sender_name
+			,FIND_CODENAME(b.authority)  AS sender_authority
+			
+		FROM mail_receivers r
+		join mail m 			ON(r.mail_no = m.mail_no)
+		join member b 			ON(m.sender_id = b.member_id)
+		
+		WHERE  	ROWNUM &lt;= 4
+		AND		m.class_id = #{classId}
+		AND 		r.mail_receiver = #{mailReceiver}
+		AND		r.read_check = 'F201'
+		AND		m.mail_type != 'F305'
+        
+        ORDER BY m.mail_send_date DESC;
+	</select>
+	
+	<!-- mail header 안읽은 메일 카운트 따로 -->
+	<select id="selectHeaderCount" resultType="MailReceiverVO">
+		SELECT r.mail_receiver
+			  ,COUNT(r.read_check)			AS new_mail_count
+			
+		FROM mail_receivers r
+		join mail m 			ON(r.mail_no = m.mail_no)
+		
+		WHERE  	m.class_id = #{classId}
+		AND 	r.mail_receiver = #{mailReceiver}
+		AND		read_check = 'F201'
+		AND		m.mail_type != 'F305'
+
+		GROUP BY r.mail_receiver
+	</select>
+	
+</mapper>

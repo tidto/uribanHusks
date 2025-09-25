@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yedam.uriban.test.mapper.TestMapper">
+	<select id="selectTestList" resultType="TestVO">
+SELECT test_mng_no
+		   , t.homework_no
+		   , t.test_no
+		   , h.homework_title
+           , (select count(t.homework_no)
+				  from test t
+                  where t.homework_no=h.homework_no) as problem_count
+           , h.homework_rdate
+           , h.homework_ddate
+           , FIND_CODENAME((select answer_state from submit_test where homework_no=h.homework_no)) as answer_state
+           , (select total_score from submit_test where homework_no=h.homework_no) as total_score
+FROM test t join homework h on (t.homework_no=h.homework_no)
+ORDER BY test_mng_no DESC
+	</select>
+	
+	<!-- 과제에 해당하는 문제들 -->
+	<select id="selectTest" resultType="TestVO">
+		SELECT test_no
+			   , homework_no
+			   , test_mng_no
+		FROM test
+		WHERE homework_no = #{homeworkNo}
+	</select>
+	
+	<!-- Test에 담긴 문제 -->
+	<select id="selectContainTest" resultType="TestVO">
+		SELECT t.test_no
+			   , b.test_detail
+			   , b.test_score
+		FROM test t JOIN test_bank b ON(t.test_no = b.test_no)
+		WHERE t.test_no = #{testNo}
+	</select>
+	
+	
+	
+	<insert id="insertTest" parameterType="TestVO">
+		<selectKey keyProperty="testMngNo"
+				   resultType="int"
+				   order="BEFORE">
+			SELECT NVL(MAX(test_mng_no), 0) + 1
+			FROM test		
+		</selectKey>
+		INSERT INTO test
+			   (
+					test_mng_no
+			   		, homework_no
+			   		, test_no
+			   )
+		VALUES (
+					#{testMngNo}
+					, #{homeworkNo}
+					, #{testNo}
+			   )
+	</insert>
+
+	<delete id="deleteTest" parameterType="int">
+		DELETE FROM test
+		WHERE test_mng_no = #{testMngNo}
+	</delete>
+	
+	<delete id="deleteInputTest" parameterType="int">
+		DELETE FROM test
+		WHERE test_no = #{testNo}
+	</delete>
+</mapper>

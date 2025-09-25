@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  <mapper namespace="com.yedam.uriban.album.down.mapper.DownHistoryMapper">
+  
+  <select id="selectHistoryList" resultType="DownHistoryVO">
+  	SELECT down_no
+  		  , album_no
+  		  , user_id
+  		  , user_ip
+  		  , down_date
+  		  , down_cnt 
+  	 FROM down_history
+  ORDER BY down_no
+  	 
+  </select>
+  
+  <select id="selectHistoryInfo" resultType="DownHistoryVO" parameterType="int">
+  	SELECT down_no
+  		  , album_no
+  		  , user_id
+  		  , user_ip
+  		  , down_date
+  		  , down_cnt 
+  	 FROM down_history
+  	WHERE down_no = #{downNo} 
+  </select>
+  
+  <insert id="insertHistory" parameterType="DownHistoryVO" >
+  	<selectKey keyProperty="downNo"
+ 			   resultType="int"
+ 			   order="BEFORE">
+ 		SELECT NVL(MAX(down_no),0) + 1
+ 		FROM down_history
+ 	</selectKey>
+  	
+  	INSERT INTO down_history
+  			(
+  				down_no
+	  		  , album_no
+	  		  , user_id
+	  		  , user_ip
+	  		  , down_date
+	  		  , down_cnt	
+  			)
+  		   VALUES
+  		    (
+  		    	#{downNo}
+  		    	, #{albumNo}
+  		    	, #{userId}
+  		    	, #{userIp}
+  		    	, sysdate
+  		    	, #{downCnt}
+  		    )
+  		   			
+  </insert>
+  
+  </mapper>

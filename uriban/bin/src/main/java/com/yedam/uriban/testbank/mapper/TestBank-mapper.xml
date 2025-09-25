@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yedam.uriban.testbank.mapper.TestBankMapper">
+	<select id="selectTestBankList" resultType="TestBankVO">
+		SELECT test_no
+		       , (SELECT t.member_id
+					   FROM test_bank t JOIN member m ON(t.member_id = m.member_id)
+					   WHERE authority = (SELECT sub_cd_nm
+                       				      FROM sub_cd
+                             			  WHERE sub_cd = 'A102')) as member_id
+		       , subject_no
+		       , (SELECT sub_cd_nm
+                       FROM sub_cd
+                       WHERE sub_cd = 'C501') as test_type
+		       , test_detail
+		       , test_img
+		       , test_commentary
+		       , commentary_img
+		       , test_score
+		       , test_correct
+		FROM test_bank
+		ORDER BY test_no
+	</select>
+	
+	<select id="selectTestBank" resultType="TestBankVO">
+		SELECT test_no
+		       , (SELECT t.member_id
+					   FROM test_bank t JOIN member m ON(t.member_id = m.member_id)
+					   WHERE authority = (SELECT sub_cd_nm
+                       				      FROM sub_cd
+                             			  WHERE sub_cd = 'A102')) as member_id
+		       , subject_no
+		       , (SELECT sub_cd_nm
+                       FROM sub_cd
+                       WHERE sub_cd = 'C501') as test_type
+		       , test_detail
+		       , test_img
+		       , test_commentary
+		       , commentary_img
+		       , test_score
+		       , test_correct
+		FROM test_bank
+		WHERE test_no = #{testNo}
+	</select>
+	
+	<insert id="insertTestBank" parameterType="TestBankVO">
+		<selectKey keyProperty="testNo"
+				   resultType="int"
+				   order="BEFORE">
+			SELECT NVL(MAX(test_no), 0) + 1
+			FROM test_bank
+		</selectKey>
+		INSERT INTO test_bank
+				(
+					test_no
+					, member_id
+					, subject_no
+					, test_type
+					, test_detail
+					, test_score
+					, test_correct
+				)
+		VALUES  (
+					#{testNo}
+					, #{memberId}
+					, #{subjectNo}
+					, #{testType}
+					, #{testDetail}
+					, #{testScore}
+					, #{testCorrect}
+				)
+	</insert>
+	
+	<update id="updateTestBank" parameterType="TestBankVO">
+		UPDATE test_bank
+		<set>
+			<if test="testType != null and !testType.equals('')">
+				test_type = #{testType}
+			</if>
+			<if test="testDetail != null and !testDetail.equals('')">
+				test_detail = #{testDetail}
+			</if>
+			<if test="testImg != null and !testImg.equals('')">
+				test_img = #{testImg}
+			</if>
+			<if test="testCommentary != null and !testCommentary.equals('')">
+				test_commentary = #{testCommentary}
+			</if>
+			<if test="commentaryImg != null and !commentaryImg.equals('')">
+				commentary_img = #{commentaryImg}
+			</if>
+			<if test="testScore gt 0">
+				test_score = #{testScore}
+			</if>
+			<if test="testCorrect != null and !testCorrect.equals('')">
+				test_correct = #{testCorrect}
+			</if>
+		</set>
+		WHERE test_no = #{testNo}
+	</update>
+	
+	<delete id="deleteTestBank" parameterType="int">
+		DELETE FROM test_bank
+		WHERE test_no = #{testNo}
+	</delete>
+</mapper>

@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yedam.uriban.schedule.mapper.ScheduleMapper">
+	<select id="selectScheduleList" resultType="ScheduleVO">
+		<![CDATA[
+		SELECT schedule_no
+				, class_id
+				, notice_no
+				, schedule_writer
+				, schedule_category
+				, schedule_title
+				, start_date
+				, end_date
+		FROM academic_schedule
+		ORDER BY schedule_no
+		]]>
+	</select>
+	
+	<select id="selectCalList" resultType="CalendarVO">
+		<![CDATA[
+		SELECT schedule_no           "id"
+				, s.class_id
+				, s.notice_no
+				, schedule_writer
+				, schedule_category  "calendarId"
+				, 'allday'           "category"
+				, schedule_title     "title"
+				, start_date         "start"
+				, end_date           "end"
+				, CASE
+						WHEN n.NOTICE_NO IS NOT NULL THEN '<a class="btn btn-primary btn-block" href="/notice/noticeF401List?noticeNo='|| s.notice_no ||'#taskCard'|| s.notice_no ||'" >게시판으로 이동</a>'
+				END AS "body"
+		FROM academic_schedule s
+			LEFT JOIN notice n ON s.NOTICE_NO = n.NOTICE_NO
+		WHERE s.CLASS_ID = #{classId}
+		and (start_date between #{start} and #{end} or end_date between #{start} and #{end})
+		]]>
+	</select>
+	
+	<select id="selectScheduleInfo" resultType="ScheduleVO">
+		SELECT schedule_no
+				, class_id
+				, notice_no
+				, schedule_writer
+				, schedule_category
+				, schedule_title
+				, start_date
+				, end_date
+				, (select notice_title from notice where notice_no = s.notice_no) as notice_title
+		FROM academic_schedule s
+		WHERE schedule_no = #{scheduleNo}
+	</select>
+	
+	<select id="getMaxNo" resultType="int">
+		SELECT NVL(MAX(schedule_no), 0) FROM academic_schedule	
+	</select>
+	
+	<insert id="insertSchedule" parameterType="ScheduleVO">
+		INSERT INTO academic_schedule
+				(
+					schedule_no
+					, class_id
+					, notice_no
+					, schedule_writer
+					, schedule_category
+					, schedule_title
+					, start_date
+					, end_date
+				)
+				VALUES
+				(
+					#{ scheduleNo}
+				<!-- 	, (SELECT class_id FROM class WHERE class_id = #{classId})
+					, (SELECT notice_no FROM notice WHERE notice_no = #{noticeNo}) -->
+					, #{classId}
+					, #{noticeNo}
+					, #{scheduleWriter}
+					, #{scheduleCategory}
+					, #{scheduleTitle}
+					, #{startDate}
+					, #{endDate}
+				)
+	</insert>
+		
+	<update id="updateSchedule" parameterType="ScheduleVO">
+		UPDATE academic_schedule
+		<set>
+			<if test="scheduleCategory != null and !scheduleCategory.equals('')">
+				schedule_category = #{scheduleCategory},
+			</if>
+			<if test="scheduleTitle != null and !scheduleTitle.equals('')">
+				schedule_title = #{scheduleTitle},
+			</if>
+			<if test="startDate != null">
+				start_date = #{startDate},
+			</if>
+			<if test="endDate != null">
+				end_date = #{endDate},
+			</if>
+			notice_no = #{noticeNo}
+		</set>
+		WHERE schedule_no = #{scheduleNo}
+	</update>
+	
+	<delete id="deleteSchedule" parameterType="int">
+		DELETE FROM academic_schedule
+		WHERE TO_NUMBER(schedule_no) = #{scheduleNo}
+	</delete>
+
+
+	<select id="getCalendarEvent" resultType="CalendarVO">
+		<![CDATA[
+		SELECT schedule_no           "id"
+				, s.class_id
+				, s.notice_no
+				, schedule_writer
+				, schedule_category  "calendarId"
+				, 'allday'           "category"
+				, schedule_title     "title"
+				, start_date         "start"
+				, end_date           "end"
+				, CASE
+						WHEN n.NOTICE_NO IS NOT NULL THEN '<a class="btn btn-primary btn-block" href="/notice/noticeF401List?noticeNo='|| s.notice_no ||'#taskCard'|| s.notice_no ||'" >게시판으로 이동</a>'
+				END AS "body"
+		FROM academic_schedule s
+			LEFT JOIN notice n ON s.NOTICE_NO = n.NOTICE_NO
+		WHERE s.schedule_no = #{scheduleNo}
+		]]>
+	</select>
+</mapper>

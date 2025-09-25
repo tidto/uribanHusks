@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper
+	namespace="com.yedam.uriban.member.mapper.CertMapper">
+	<!-- 신청 내역 조회 -->
+	<select id="certList" resultType="CertVO">
+		SELECT CERT_NO
+			, MEMBER_ID
+			, (SELECT MEMBER_NAME
+				FROM MEMBER
+				WHERE MEMBER_ID = c.MEMBER_ID) AS MEMBER_NAME
+			, ORIGINALFILE_NAME
+			, SAVEFILE_NAME
+			, UPLOAD_DATE
+			, UPDATE_DATE
+			, FIND_CODENAME(CERT_STAT) AS CERT_STAT
+			, CMT
+		FROM TC_CERTS c
+        ORDER BY UPDATE_DATE DESC
+	</select>
+
+	<!-- 신청 상세 조회 -->
+	<select id="certInfo" resultType="CertVO">
+		SELECT CERT_NO
+			, MEMBER_ID
+			, ORIGINALFILE_NAME
+			, SAVEFILE_NAME
+			, UPLOAD_DATE
+			, UPDATE_DATE
+			, FIND_CODENAME(CERT_STAT) AS CERT_STAT
+			, CMT
+		FROM TC_CERTS
+        WHERE MEMBER_ID = #{memberId}
+	</select>
+
+	<!-- 교원 자격 신청 -->
+	<update id="certInsert" parameterType="CertVO">
+		<selectKey resultType="int" keyProperty="certNo"
+			order="BEFORE">
+			  SELECT NVL(MAX(CERT_NO), 0) + 1
+			  FROM TC_CERTS
+		</selectKey>
+		MERGE INTO TC_CERTS c
+		USING DUAL ON (c.MEMBER_ID = #{memberId})
+		
+		WHEN MATCHED THEN
+			UPDATE
+			SET ORIGINALFILE_NAME = #{originalfileName}
+		    	, SAVEFILE_NAME = #{savefileName}
+				, UPDATE_DATE = SYSDATE
+				, CERT_STAT = 'A701'
+
+		WHEN NOT MATCHED THEN
+			INSERT(
+				CERT_NO
+				, MEMBER_ID
+				, ORIGINALFILE_NAME
+				, SAVEFILE_NAME
+			)
+			VALUES(
+				#{certNo}
+				, #{memberId}
+				, #{originalfileName}
+				, #{savefileName}
+			)
+	</update>
+	
+	<!--  교원 자격 수정 -->
+	<update id="certUpdate" parameterType="CertVO">
+			UPDATE TC_CERTS
+			<set>
+				UPDATE_DATE = SYSDATE
+				, CERT_STAT = #{certStat}
+				<if test='cmt != null and !cmt.equals("")'>
+					, CMT = #{cmt}
+				</if>
+			</set>
+			WHERE MEMBER_ID = #{memberId}
+	</update>
+
+
+
+</mapper>

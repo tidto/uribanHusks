@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+ <mapper namespace="com.yedam.uriban.album.album.mapper.AlbumMapper">
+ 
+ <select id="getNextAlbumNo" resultType="int">
+ SELECT NVL(MAX(album_no),0) + 1
+   FROM album
+ </select>
+ 
+ <!-- 전체조회 -->
+ <select id="selectAlbumList" resultType="AlbumVO" parameterType="AlbumVO">
+  SELECT	album_no
+  			,class_id
+  			,content
+  			,place
+  			,album_date
+  			,like_count
+<!--   			<if test="memberId != null"> -->
+<!--   			,(select count(album_no) from album_like where member_id = #{memberId}   AND album_no = album.album_no) as like_yn -->
+<!--   			</if> -->
+  	FROM album
+   WHERE class_id = #{classId}
+  	ORDER BY album_no DESC
+ </select>
+ 
+ <!-- Like 조회 -->
+ <select id="selectAlbumLike" resultType="AlbumVO" parameterType="AlbumVO">
+   SELECT	a.album_no
+  			,a.class_id
+  			,a.content
+  			,a.place
+  			,a.album_date
+  			,a.like_count
+  			
+  	FROM album a
+  	JOIN album_like b 
+  	  ON a.album_no = b.album_no
+  	  
+   WHERE b.member_id = #{memberId}
+     AND class_id = #{classId}
+     
+   ORDER BY a.album_no DESC
+ </select>
+ 
+ <!-- 월 조회 -->
+ <select id="selectAlbumMonth" resultType="AlbumVO" parameterType="AlbumVO">
+  SELECT	a.album_no
+  			,a.class_id
+  			,a.content
+  			,a.place
+  			,a.album_date
+  			,a.like_count
+  	FROM album a
+  	WHERE class_id = #{classId}
+  	<if test="month != null and !month.equals('')">
+   	 AND TO_NUMBER(TO_CHAR(a.album_date,'MM')) = #{month}
+    </if>
+   ORDER BY a.album_no DESC
+ </select>
+ 
+ <!-- 태그 조회 -->
+  <select id="selectAlbumTag" resultType="AlbumVO" parameterType="AlbumVO">
+  SELECT	a.album_no
+  			,a.class_id
+  			,a.content
+  			,a.place
+  			,a.album_date
+  			,a.like_count
+  	FROM album a
+  	JOIN hash_tag b
+  	  ON a.album_no = b.album_no
+   WHERE b.tag = #{tag}
+     AND class_id = #{classId}
+   ORDER BY a.album_no DESC
+  </select>
+  
+ <!-- 단건조회 --> 
+ <select id="selectAlbumInfo" resultType="AlbumVO" parameterType="AlbumVO">
+ SELECT	album_no
+  			,class_id
+  			,content
+  			,place
+  			,album_date
+  			,like_count
+  	FROM album 	 
+   WHERE album_no = #{albumNo}
+     AND class_id = #{classId}
+ </select>
+  
+ <!-- 등록 -->
+ <insert id="insertAlbum" parameterType="AlbumVO">
+ 	<selectKey keyProperty="albumNo"
+ 			   resultType="int"
+ 			   order="BEFORE">
+ 		SELECT NVL(MAX(album_no),0) + 1
+ 		FROM album
+ 	</selectKey>
+ 	INSERT INTO album
+ 			(
+ 				album_no
+ 				, class_id
+ 				, content
+ 				, place
+ 				, album_date
+ 				, like_count
+ 			)
+ 		VALUES
+ 			(
+ 				#{albumNo}
+ 				, #{classId}
+ 				, #{content}
+ 				, #{place}
+ 				, sysdate
+ 				, 0
+ 			)		
+ </insert>
+ 
+ <!-- 수정 -->
+<update id="updateAlbum" parameterType="AlbumVO">
+	UPDATE album
+	<set>
+		<if test="content != null and !content.equals('')">
+			content = #{content},
+		</if>
+		<if test="place != null and !place.equals('')">
+			place = #{place}
+		</if>
+	</set>
+	WHERE album_no = #{albumNo}
+</update>
+
+ <!-- 삭제 -->
+ <delete id="deleteAlbum" parameterType="int">
+ 	DELETE FROM album
+ 	WHERE album_no = #{albumNo}
+ </delete>
+ 
+ <update id="addLikeCnt" parameterType="int">
+ 	UPDATE album 
+ 	   SET like_count = like_count + 1
+ 	 WHERE album_no = #{albumNo}  
+ </update>
+ 
+ <update id="minusLikeCnt" parameterType="int">
+ 	UPDATE album 
+ 	   SET like_count = like_count - 1
+ 	 WHERE album_no = #{albumNo}
+ </update>
+ </mapper>

@@ -1,0 +1,200 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yedam.uriban.testbank.mapper.TestBankMapper">
+
+	<select id="selectTestBankList" resultMap="homeworkResult">
+		SELECT b.test_no
+		       , (SELECT t.member_id
+					   FROM test_bank t JOIN member m ON(t.member_id = m.member_id)
+					   WHERE authority = (SELECT sub_cd_nm
+                       				      FROM sub_cd
+                             			  WHERE sub_cd = 'A102')) as member_id
+		       , subject_no
+		       , FIND_CODENAME(test_type) as test_type
+		       , test_detail
+		       , test_img
+		       , test_commentary
+		       , commentary_img
+		       , test_score
+		       , test_correct
+		FROM test_bank b full outer join test t on (b.test_no=t.test_no)
+			<where>
+				<if test="homeworkNo gt 0">
+					t.homework_no=#{homeworkNo}
+				</if>
+				<if test="subjectNo != null and subjectNo != ''">
+			  		subject_no = #{subjectNo}
+			  	</if>
+			</where>
+		ORDER BY test_no
+	</select>
+	
+	<resultMap id="homeworkResult" type="TestBankVO">
+	    <id property="testNo" column="test_no"/>
+	  	<collection property="answerList" javaType="ArrayList" column="test_no" ofType="TestAnswerVO" select="selectQuestionAnswer"/>
+	</resultMap>
+	
+	<select id="selectQuestionAnswer" resultType="TestAnswerVO">
+		select test_answer, test_no, answer_no
+		from test_answer
+		where test_no=#{testNo}
+	</select>
+	
+	<select id="selectTestBank" resultType="TestBankVO">
+		SELECT test_no
+		       , (SELECT t.member_id
+					   FROM test_bank t JOIN member m ON(t.member_id = m.member_id)
+					   WHERE authority = (SELECT sub_cd_nm
+                       				      FROM sub_cd
+                             			  WHERE sub_cd = 'A102')) as member_id
+		       , subject_no
+               , test_type
+               , FIND_CODENAME(test_type) as test_type_nm
+		       , test_detail
+		       , test_img
+		       , test_commentary
+		       , commentary_img
+		       , test_score
+		       , test_correct
+		FROM test_bank
+		WHERE test_no = #{testNo}
+	</select>
+	
+	
+	<select id="selectHomeworkTest" resultType="TestBankVO">
+		SELECT b.TEST_NO
+				,MEMBER_ID
+				,SUBJECT_NO
+				,TEST_TYPE
+				,TEST_DETAIL
+				,TEST_IMG
+				,TEST_COMMENTARY
+				,COMMENTARY_IMG
+				,TEST_SCORE
+				,TEST_CORRECT
+		FROM test_bank b join test t on (b.test_no = t.test_no)
+		WHERE homework_no = #{homeworkNo}
+	</select>
+	
+	<insert id="insertTestBank" parameterType="TestBankVO">
+		<selectKey keyProperty="testNo"
+				   resultType="int"
+				   order="BEFORE">
+			SELECT NVL(MAX(test_no), 0) + 1
+			FROM test_bank
+		</selectKey>
+		INSERT INTO test_bank
+				(
+					test_no
+					, member_id
+					, subject_no
+					, test_type
+					, test_detail
+					, test_score
+					, test_correct
+					<if test="testImg != null and !testImg.equals('')">
+					, test_img 
+					</if>
+					<if test="testCommentary != null and !testCommentary.equals('')">
+					, test_commentary 
+					</if>
+				)
+		VALUES  (
+					#{testNo}
+					, #{memberId}
+					, #{subjectNo}
+					, #{testType}
+					, #{testDetail}
+					, #{testScore}
+					, #{testCorrect}
+					<if test="testImg != null and !testImg.equals('')">
+					, #{testImg} 
+					</if>
+					<if test="testCommentary != null and !testCommentary.equals('')">
+					, #{testCommentary}
+					</if>
+				)
+	</insert>
+	
+	<update id="updateTestBank" parameterType="TestBankVO">
+		UPDATE test_bank
+		<set>
+			<if test="testType != null and !testType.equals('')">
+				test_type = #{testType},
+			</if>
+			<if test="testDetail != null and !testDetail.equals('')">
+				test_detail = #{testDetail},
+			</if>
+			<if test="testImg != null and !testImg.equals('')">
+				test_img = #{testImg},
+			</if>
+			<if test="testCommentary != null and !testCommentary.equals('')">
+				test_commentary = #{testCommentary},
+			</if>
+			<if test="commentaryImg != null and !commentaryImg.equals('')">
+				commentary_img = #{commentaryImg},
+			</if>
+			<if test="testScore gt 0">
+				test_score = #{testScore},
+			</if>
+			<if test="testCorrect != null and !testCorrect.equals('')">
+				test_correct = #{testCorrect},
+			</if>
+		</set>
+		WHERE test_no = #{testNo}
+	</update>
+	
+	<delete id="deleteTestBank" parameterType="int">
+		DELETE FROM test_bank
+		WHERE test_no = #{testNo}
+	</delete>
+	
+	<select id="getCodeName" resultType="String" parameterType="String">
+		SELECT sub_cd_nm
+		FROM sub_cd
+		WHERE sub_cd = #{subjectNo}
+	</select>
+	
+	
+	<!-- paging -->
+	<select id="getPageList" parameterType="Map" resultMap="homeworkResult">
+		SELECT *	FROM (select rownum rn, tb.* from (
+		
+			  select test_no
+			       , (SELECT t.member_id
+						   FROM test_bank t JOIN member m ON(t.member_id = m.member_id)
+						   WHERE authority = (SELECT sub_cd_nm
+	                       				      FROM sub_cd
+	                             			  WHERE sub_cd = 'A102')) as member_id
+			       , subject_no
+			       , FIND_CODENAME(subject_no) as subject_no_nm
+	               , test_type
+	               , FIND_CODENAME(test_type) as test_type_nm
+			       , test_detail
+			       , test_img
+			       , test_commentary
+			       , commentary_img
+			       , test_score
+			       , test_correct
+			  from test_bank
+			  <include refid="criteria"></include>
+			  order by test_no DESC
+			  
+		) tb)	WHERE rn BETWEEN #{startNo} AND #{endNo}
+	</select>
+	<select id="getCount" resultType="int">
+		select count(*)
+		from test_bank
+		<include refid="criteria"></include>
+	</select>
+	
+	<sql id="criteria">
+		where member_id=#{memberId}
+			<if test="subjectNo != null and subjectNo != ''">
+		  		and subject_no = #{subjectNo}
+		  	</if>
+
+	</sql>
+</mapper>

@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE tiles-definitions PUBLIC
+"-//Apache Software Foundation//DTD Tiles Configuration 3.0//EN"
+"http://tiles.apache.org/dtds/tiles-config_3_0.dtd">
+
+<tiles-definitions>
+	
+	<!-- 메인 레이아웃 -->
+	<definition name="mainTemplate" template="/WEB-INF/views/tiles/main/layout.jsp">
+		<put-attribute name="side" value="/WEB-INF/views/tiles/main/nav.jsp"/>
+		<put-attribute name="header" value="/WEB-INF/views/tiles/main/header.jsp"/>
+		<put-attribute name="footer" value="/WEB-INF/views/tiles/main/footer.jsp"/>
+	</definition>
+	
+	<!-- 마이페이지 레이아웃 -->
+	<definition name="myTemplate" template="/WEB-INF/views/tiles/my/mypagelayout.jsp">
+		<put-attribute name="header" value="/WEB-INF/views/tiles/my/myheader.jsp"/>
+		<put-attribute name="footer" value="/WEB-INF/views/tiles/my/myfooter.jsp"/>
+	</definition>
+	
+	<!-- 마이페이지 바디-->
+	<definition name="my/*" extends="myTemplate">
+		<put-attribute name="content" value="/WEB-INF/views/my/{1}.jsp"/>
+	</definition>
+	
+	<!-- 홈페이지 레이아웃 -->
+	<definition name="homeTemplate" template="/WEB-INF/views/tiles/home/homelayout.jsp"> 	
+	</definition>
+	
+	<!-- 홈페이지 바디-->
+	<definition name="home/*" extends="homeTemplate">
+		<put-attribute name="content" value="/WEB-INF/views/home/{1}.jsp"/>
+	</definition>
+	
+	<!-- 관리자페이지 레이아웃 -->
+	<definition name="adminTemplate" template="/WEB-INF/views/tiles/admin/adminlayout.jsp">
+		<put-attribute name="admside" value="/WEB-INF/views/tiles/admin/adminnav.jsp"/>
+		<put-attribute name="admheader" value="/WEB-INF/views/tiles/admin/adminheader.jsp"/>
+		<put-attribute name="admfooter" value="/WEB-INF/views/tiles/admin/adminfooter.jsp"/>
+	</definition>
+	
+	<!-- 관리자페이지 바디 -->
+	<definition name="admin/*" extends="adminTemplate">
+		<put-attribute name="admcontent" value="/WEB-INF/views/admin/{1}.jsp"/>
+	</definition>
+	<!-- tiles 제외 시킨다 -->
+	<definition name="empty" template="/WEB-INF/views/tiles/empty.jsp">
+		<put-attribute name="content" value=""/>
+	</definition>
+
+	<definition name="popup/*" extends="empty">
+		<put-attribute name="content" value="/WEB-INF/views/popup/{1}.jsp"/>
+	</definition>
+
+
+	<!-- 메인 바디 -->
+	<definition name="*/*" extends="mainTemplate"> <!-- template 속성을 사용하는 definition 밑에 와야함. 상속 대상을 extends에 작성 -->
+		<put-attribute name="content" value="/WEB-INF/views/{1}/{2}.jsp"/>
+	</definition>
+
+
+
+
+</tiles-definitions>

@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  <mapper namespace="com.yedam.uriban.album.comment.mapper.AlbumCommentMapper">
+  
+  <!-- 전체조회 -->
+  <select id="selectCommentList" resultType="AlbumCommentVO" parameterType="int">
+  	SELECT	reply_no
+  			,album_no
+  			,content
+  			,parent_reply_no
+  			,user_name
+  			,reply_date
+  			,reply_state
+  	  FROM album_comment
+  	 ORDER BY reply_no
+  </select>
+  
+   <!-- 상세댓글조회 -->
+  <select id="selectCommentDetailList" resultType="AlbumCommentVO" parameterType="AlbumCommentVO">
+  	SELECT	reply_no
+  			,album_no
+  			,content
+  			,parent_reply_no
+  			,user_name
+  			,reply_date
+  			,reply_state
+  	  FROM album_comment
+  	 WHERE parent_reply_no = #{parentReplyNo}
+ 	<if test="albumNo gt 0">
+		AND album_no = #{albumNo}
+	</if>  	   
+  	 ORDER BY reply_no
+  </select>
+  
+  <!-- 앨범별 조회 -->
+  <select id="selectCommentAlbumList" resultType="AlbumCommentVO" parameterType="int">
+  	SELECT	reply_no
+  			,album_no
+  			,content
+  			,parent_reply_no
+  			,user_name
+  			,reply_date
+  			,reply_state
+  	  FROM album_comment
+  	 WHERE album_no = #{albumNo}
+  	   AND parent_reply_no = 0
+  	 ORDER BY reply_no
+  </select>
+  
+  <!-- 단건조회 -->
+  <select id="selectCommentInfo" resultType="AlbumCommentVO" parameterType="int">
+  	SELECT	reply_no
+  			,album_no
+  			,content
+  			,parent_reply_no
+  			,user_name
+  			,reply_date
+  			,reply_state
+  	  FROM album_comment
+  	 WHERE reply_no = #{reply_no}
+  </select>
+  
+  <!-- 등록 -->
+  <insert id="insertComment" parameterType="AlbumCommentVO">
+  	<selectKey keyProperty="replyNo"
+ 			   resultType="int"
+ 			   order="BEFORE">
+ 		SELECT NVL(MAX(reply_no),0) + 1
+ 		FROM album_comment
+ 	</selectKey>
+ 	INSERT INTO album_comment
+ 			(
+ 				reply_no
+	  			,album_no
+	  			,content
+	  			,parent_reply_no
+	  			,user_name
+	  			,reply_date
+	  			,reply_state
+ 			)
+ 		VALUES
+ 			(
+ 				#{replyNo}
+ 				, #{albumNo}
+ 				, #{content}
+ 				, #{parentReplyNo}
+ 				, #{userName}
+ 				, sysdate
+ 				, 'B201'
+ 			)
+  </insert>
+  
+  <!-- 수정 -->
+  <update id="updateComment" parameterType="AlbumCommentVO">
+  	UPDATE album_comment
+  	<set>
+  		<if test="content != null and !content.equals('')">
+  			content = #{content}
+  		</if>
+  		<choose>
+	  		<when test="replyState.equals('B203')">
+	  			reply_state = #{replyState},
+	  			content = '관리자에 의해 삭제된 게시글입니다.'
+	  			
+	  		</when>
+	  		<when test="replyState.equals('B202')">
+	  			reply_state = #{replyState},
+	  			content = FIND_CODENAME(#{replyState})
+	  		</when>
+  		</choose>
+  		
+  	</set>
+  	WHERE reply_no = #{replyNo}
+  </update>
+  
+  <!-- 삭제 -->
+  <delete id="deleteComment" parameterType="int">
+  	DELETE album_comment
+  	 WHERE reply_no = #{replyNo}
+  </delete>
+  
+  <delete id="deletedetailComment" parameterType="int">
+  	DELETE album_comment
+  	 WHERE parent_reply_no = #{replyNo}
+  </delete>
+  
+  <delete id="deleteAlbumComment" parameterType="int">
+  	DELETE album_comment
+  	 WHERE album_no = #{albumNo}
+  </delete>
+  
+  </mapper>

@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper
+	namespace="com.yedam.uriban.member.mapper.ReportMapper">
+	<!-- 신고내역 조회 -->
+	<select id="getReportList" resultType="ReportVO">
+		SELECT REPORT_NO
+		, MEMBER_ID
+		, FIND_CODENAME(REPORT_TYPE) AS REPORT_TYPE
+        , CONTENT
+		, FIND_CODENAME(CONTENTS_TYPE) AS CONTENTS_TYPE
+		, CONTENTS_NO
+		, REPORTER_ID
+		, REPORT_DATE
+		, FIND_CODENAME(REPORT_STATE) AS REPORT_STATE
+        
+		FROM MEMBER_REPORT
+        ORDER BY REPORT_NO DESC
+	</select>
+
+	<!-- 신고내역 상세조회 -->
+	<select id="getReportInfo" resultType="ReportVO">
+		SELECT REPORT_NO
+		, MEMBER_ID
+		, REPORT_TYPE
+		, CONTENTS_TYPE
+		, CONTENTS_NO
+		, REPORTER_ID
+		, REPORT_DATE
+		FROM MEMBER_REPORT
+		WHERE REPORT_NO = #{reportNo}
+	</select>
+
+
+
+
+	<!-- 신고내역 생성 -->
+	<insert id="insertReport" parameterType="ReportVO">
+		<selectKey resultType="int" keyProperty="reportNo"
+			order="BEFORE">
+			SELECT NVL(MAX(REPORT_NO), 0)+1
+			FROM MEMBER_REPORT
+		</selectKey>
+		INSERT INTO MEMBER_REPORT(
+				REPORT_NO
+				, MEMBER_ID
+				, REPORT_TYPE
+				, CONTENTS_TYPE
+				, CONTENTS_NO
+				, CONTENT
+				, REPORTER_ID
+		)
+		SELECT
+				#{reportNo}
+				, #{memberId}
+				, #{reportType}
+				, #{contentsType}
+				, #{contentsNo}
+				, #{content}
+				, #{reporterId}
+		FROM dual
+		WHERE NOT EXISTS(SELECT *
+				FROM MEMBER_REPORT
+				WHERE CONTENTS_NO = #{contentsNo}
+				and REPORTER_ID = #{reporterId})
+	</insert>
+
+
+	<!-- 신고내역 수정 -->
+	<update id="updateReport" parameterType="ReportVO">
+		UPDATE MEMBER_REPORT
+		<set>
+			<if test='reportState != null and !reportState.equals("")'>
+				, REPORT_STATE = #{reportState}
+			</if>
+			WHERE REPORT_NO = #{reportNo}
+		</set>
+	</update>
+
+	<!-- 신고내역 삭제 -->
+	<delete id="deleteReport">
+		DELETE FROM member
+		WHERE member_id = #{memberId}
+	</delete>
+
+
+</mapper>

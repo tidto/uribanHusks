@@ -1,0 +1,217 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yedam.uriban.student.mapper.StudentMapper">
+
+	<select id="getStudentList" resultType="StudentVO">
+		SELECT student_no
+			,class_id
+			,student_class_no
+			,member_id
+			,student_email
+			,student_name
+			,birthday
+			,student_img
+			,student_sex
+			,remark
+			,allergy
+		FROM student_manage
+		WHERE class_id = #{classId}
+		ORDER BY student_class_no
+	</select>
+
+	<!-- 단건조회 -->
+	<select id="getStudentInfo" resultType="StudentVO">
+		SELECT
+		    student_no,
+		    class_id,
+		    student_class_no,
+		    member_id,
+		    student_email,
+		    student_name,
+		    birthday,
+		    student_img,
+		    student_sex,
+		    CASE
+		        WHEN remark = 'G101' THEN '다문화가정'
+		        WHEN remark = 'G102' THEN '한부모가정'
+		        WHEN remark = 'G103' THEN '조부모가정'
+		        WHEN remark = 'G104' THEN '기초생활수급자'
+		        WHEN remark = 'G105' THEN '차상위계층'
+		        WHEN remark = 'G106' THEN '해당없음'
+		        ELSE '해당없음'
+		    END AS remark,
+		    LISTAGG(sub_cd_nm, ', ') WITHIN GROUP (ORDER BY sub_cd_nm) AS allergy
+		FROM student_manage
+		LEFT JOIN sub_cd ON INSTR(allergy, sub_cd) > 0
+		WHERE student_no = #{studentNo}
+		GROUP BY
+		    student_no,
+		    class_id,
+		    student_class_no,
+		    member_id,
+		    student_email,
+		    student_name,
+		    birthday,
+		    student_img,
+		    student_sex,
+		    remark
+	</select>
+
+
+	<select id="getMaxNo" resultType="int">
+		SELECT NVL(MAX(student_no), 0)
+		+ 1
+		FROM student_manage
+	</select>
+
+	<!-- 등록 -->
+	<insert id="insertStudent" parameterType="StudentVO">
+		INSERT INTO student_manage(
+			student_no
+			,class_id
+			,student_class_no
+			,student_name
+			,member_id
+			,student_email
+			,birthday
+			,student_sex
+			<if test="studentImg!=null and studentImg.equals('')">
+				,student_img
+			</if>
+			,remark
+			,allergy
+			)
+		VALUES
+			(
+			#{studentNo}
+			,#{classId}
+			,#{studentClassNo}
+			,#{studentName}
+			,#{memberId}
+			,#{studentEmail}
+			,#{birthday}
+			,#{studentSex}
+			<if test="studentImg!=null and studentImg.equals('')">
+				,#{studentImg}
+			</if>
+			,#{remark}
+			,#{allergy}
+			)
+
+	</insert>
+	<!-- 업데이트 -->
+	<update id="updateStudent" parameterType="StudentVO">
+		UPDATE student_manage
+		<set>
+			<if test='studentImg != null and !studentImg.equals("")'>
+				student_img = #{studentImg}
+			</if>
+			<if test='studentClassNo != null and !studentClassNo.equals("")'>
+				,student_class_no = #{studentClassNo}
+			</if>
+			<if test='studentNo != null and !studentNo.equals("")'>
+				,student_no = #{studentNo}
+			</if>
+			<if test='studentEmail != null and !studentEmail.equals("")'>
+				,student_email = #{studentEmail}
+			</if>
+			<if test='classId != null and !classId.equals("")'>
+				,class_id = #{classId}
+			</if>
+			<if test='memberId != null and !memberId.equals("")'>
+				,member_id = #{memberId}
+			</if>
+			<if test='studentName != null and !studentName.equals("")'>
+				,student_name = #{studentName}
+			</if>
+			<if test='birthday != null and !birthday.equals("")'>
+				,birthday = #{birthday}
+			</if>
+			<if test='studentSex != null and !studentSex.equals("")'>
+				,student_sex = #{studentSex}
+			</if>
+			<if test='remark != null and !remark.equals("")'>
+				,remark = #{remark}
+			</if>
+			<if test='allergy != null and !allergy.equals("")'>
+				,allergy = #{allergy}
+			</if>
+			WHERE student_no = #{studentNo}
+		</set>
+	</update>
+
+	<!-- 삭제 -->
+	<delete id="deleteStudent" parameterType="studentVO">
+	DECLARE
+		v_student_no number(20);
+	BEGIN
+		v_student_no := ${studentNo};
+	BEGIN
+		DELETE FROM class_member WHERE member_id = (SELECT member_id
+													FROM student_manage
+													WHERE student_no = v_student_no
+													);
+		DELETE FROM student_manage WHERE student_no = v_student_no;
+	COMMIT;
+	EXCEPTION
+		WHEN OTHERS THEN
+			ROLLBACK;
+		RAISE;
+	  END;
+	END;
+	</delete>
+
+	<!-- 학생 나의 반 가입 -->
+	<update id="studentJoin" parameterType="StudentVO" statementType="CALLABLE">
+	{ CALL
+
+		    DECLARE
+		      v_student_no NUMBER;
+		      v_member_no NUMBER;
+		      v_update_count NUMBER;
+		      v_insert_count NUMBER;
+		    BEGIN
+		      SELECT NVL(MAX(member_no), 0)+1 INTO v_member_no FROM class_member;
+		    
+		      UPDATE student_manage
+		      SET
+		        member_id = #{memberId},
+		        student_email = #{studentEmail},
+		        allergy = #{allergy}
+		      WHERE student_name = #{studentName}
+		  	  AND student_class_no = #{studentClassNo}
+		  	  AND class_id = (SELECT class_id
+		          			FROM class WHERE class_pw = #{classPw} AND class_id = #{classId});
+		        
+		      v_update_count := SQL%ROWCOUNT;
+		    
+		      IF v_update_count = 1 THEN
+		        INSERT INTO class_member
+		        VALUES(
+		        v_member_no
+		        ,#{memberId}
+		        ,#{classId}
+		        );
+				IF SQL%ROWCOUNT <![CDATA[<]]> 1 THEN
+					v_insert_count := 0;
+				ELSE
+					v_insert_count := SQL%ROWCOUNT;
+				END IF;
+		#{result, mode=OUT, jdbcType=INTEGER, javaType=Integer} := v_insert_count;
+		      END IF;
+		      COMMIT;
+		    END
+		  }
+</update>
+	
+	<!-- 설문 대상자 조회 -->
+	<select id="survStudentList" resultType="StudentVO">
+		SELECT member_id
+				, student_name
+		FROM student_manage
+		WHERE class_id = #{classId}
+	</select>
+</mapper>
+ 

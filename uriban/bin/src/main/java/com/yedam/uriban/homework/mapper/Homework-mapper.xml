@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yedam.uriban.homework.mapper.HomeworkMapper">
+	<select id="selectHomeworkList" resultType="HomeworkVO">
+		SELECT homework_no
+			   , class_id
+			   , homework_title
+			   , homework_rdate
+			   , homework_ddate
+			   , (select count(t.homework_no)
+				  from test t join homework h on(t.homework_no = h.homework_no)) as problem_count
+			   , ((select count(submit_test_no)
+				  from submit_test s join homework h on(s.homework_no = h.homework_no)
+				  where answer_state = (select sub_cd_nm
+                  		                	   from sub_cd
+                          		        	   where sub_cd = 'C301')) || '/' || (SELECT count(student_no)
+																				  FROM student_manage s join homework h on(s.class_id = h.class_id))) as submit_count
+			   , FIND_CODENAME(homework_status) as homework_status
+		   	   , FIND_CODENAME(test_subject) as test_subject
+		FROM homework
+		ORDER BY homework_no 
+	</select>
+	
+	<select id="selectStudentHomeworkList" resultType="HomeworkVO">
+		SELECT w.homework_no
+			   , homework_title
+			   , homework_rdate
+			   , homework_ddate
+			   , (select count(t.homework_no)
+				  from test t join homework h on(t.homework_no = h.homework_no))problem_count
+			   , answer_state
+			   , total_score
+               , test_subject
+               , class_id
+		FROM homework w LEFT OUTER JOIN submit_test s 
+                                     ON (s.homework_no = w.homework_no and member_id = #{memberId})
+		WHERE test_subject = #{testSubject}
+		AND class_id = #{classId}
+		ORDER BY homework_no
+	</select>
+	
+	<select id="selectHomework" resultType="HomeworkVO">
+		SELECT homework_no
+			   , class_id
+			   , homework_title
+			   , homework_rdate
+			   , homework_ddate
+			   , (select count(t.homework_no)
+				  from test t join homework h on(t.homework_no = h.homework_no)) as problem_count
+			   , ((select count(submit_test_no)
+				  from submit_test s join homework h on(s.homework_no = h.homework_no)
+				  where answer_state = (select sub_cd_nm
+                  		                	   from sub_cd
+                          		        	   where sub_cd = 'C301')) || '/' || (SELECT count(student_no)
+																				  FROM student_manage s join homework h on(s.class_id = h.class_id))) as submit_count
+			   , FIND_CODENAME(homework_status) as homework_status
+		   	   , test_subject
+		FROM homework
+		WHERE homework_no = #{homeworkNo}
+	</select>
+	
+	<insert id="insertHomework" parameterType="HomeworkVO">
+		<selectKey keyProperty="homeworkNo"
+				   resultType="int"
+				   order="BEFORE">
+			SELECT NVL(MAX(homework_no), 0) + 1
+			FROM homework
+		</selectKey>
+		INSERT INTO homework
+				(
+					homework_no
+					, class_id
+					, homework_title
+					, homework_rdate
+					, homework_ddate
+					, problem_count
+					, submit_count
+					, homework_status
+					, test_subject
+				)
+		VALUES  (
+					#{homeworkNo}
+					, #{classId}
+					, #{homeworkTitle}
+					, sysdate
+					, #{homeworkDdate}
+					, #{problemCount}
+					, 0
+					, 'C102'
+					, #{testSubject}
+				)
+	</insert>
+	
+	<update id="updateHomework" parameterType="HomeworkVO">
+		UPDATE homework
+		<set>
+			<if test="homeworkTitle != null and !homeworkTitle.equals('')">
+				homework_title = #{homeworkTitle},
+			</if>
+			<if test="homeworkDdate != null">
+				homework_ddate = #{homeworkDdate},
+			</if>
+			<if test="testSubject != null and !testSubject.equals('')">
+				test_subject = #{testSubject},
+			</if>
+		</set>
+		WHERE homework_no = #{homeworkNo}
+	</update>
+	
+	<delete id="deleteHomework" parameterType="int">
+		DELETE FROM homework
+		WHERE homework_no = #{homeworkNo}
+	</delete>
+</mapper>

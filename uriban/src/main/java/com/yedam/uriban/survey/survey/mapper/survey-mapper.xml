@@ -1,0 +1,224 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yedam.uriban.survey.survey.mapper.SurveyMapper">
+	<select id="selectSurveyList" resultType="SurveyVO">
+		SELECT surv_no
+				, class_id
+				, notice_no
+				, surv_title
+				, start_date
+				, end_date 
+				, (CASE WHEN TRUNC(start_date) &gt; SYSDATE THEN FIND_CODENAME('E301')
+        				WHEN TRUNC(end_date) &lt; SYSDATE THEN FIND_CODENAME('E303')
+        												ELSE FIND_CODENAME('E302')
+    													END) AS surv_status
+				, reg_date
+				, FIND_CODENAME(account_type) AS account_type
+		FROM survey
+		ORDER BY end_date
+	</select>
+	
+	<select id="selectSurveyListTop" resultType="SurveyVO" parameterType="SurveyVO">
+		SELECT   surv_no
+				, class_id
+				, notice_no
+				, surv_title
+				, start_date
+				, end_date
+				, (CASE WHEN TRUNC(start_date) &gt; SYSDATE THEN FIND_CODENAME('E301')
+        				WHEN TRUNC(end_date) &lt; SYSDATE THEN FIND_CODENAME('E303')
+        												ELSE FIND_CODENAME('E302')
+    													END) AS surv_status
+				, reg_date
+				, find_codename(account_type) AS account_type
+		FROM survey 
+		WHERE ROWNUM <![CDATA[<=]]> 5
+		 AND class_id = #{classId}
+		ORDER BY surv_no DESC
+	</select>
+	
+	<select id="getPeopleList" resultType="SurveyVO">
+		SELECT  s.surv_no
+				, class_id
+				, notice_no
+				, surv_title
+				, start_date
+				, end_date
+				, (CASE WHEN TRUNC(start_date) &gt; SYSDATE THEN FIND_CODENAME('E301')
+        				WHEN TRUNC(end_date) &lt; SYSDATE THEN FIND_CODENAME('E303')
+        												ELSE FIND_CODENAME('E302')
+    													END) AS surv_status
+				, reg_date
+				, FIND_CODENAME(account_type) AS account_type
+        		, (SELECT FIND_CODENAME(surv_answer) AS surv_answer
+        		   FROM survey_people p 
+        		   WHERE p.surv_no = s.surv_no 
+        		   AND p.member_id = #{memberId}) AS surv_answer
+        		, (SELECT surv_man_no 
+        		   FROM survey_people p 
+        		   WHERE p.surv_no = s.surv_no
+        		   AND p.member_id = #{memberId}) AS surv_man_no
+        FROM survey s
+        WHERE class_id = #{classId}
+	</select>
+	
+	<select id="getSubmitList" resultMap="surveySubList">
+   		SELECT  surv_no
+        		, class_id
+            	, notice_no
+            	, surv_title
+            	, start_date
+            	, end_date
+            	, (CASE WHEN TRUNC(start_date) &gt; SYSDATE THEN FIND_CODENAME('E301')
+        				WHEN TRUNC(end_date) &lt; SYSDATE THEN FIND_CODENAME('E303')
+        												ELSE FIND_CODENAME('E302')
+    													END) AS surv_status
+            	, reg_date
+            	, FIND_CODENAME(account_type) AS account_type
+    	FROM survey
+    	WHERE class_id = #{classId}  
+	</select>
+   
+	<resultMap type="SurveyVO" id="surveySubList">
+		<result property="survNo" column="surv_no"/>
+		<collection property="people" javaType="ArrayList" column="surv_no" ofType="PeopleVO" select="selectSubPeople" />
+	</resultMap>
+   
+	<select id="selectSubPeople" resultType="PeopleVO">
+		SELECT  surv_man_no
+		      	, surv_no
+		      	, member_id
+		      	, member_name
+		      	, FIND_CODENAME(surv_answer) AS surv_answer
+		      	, FIND_CODENAME(account_type) AS account_type
+		FROM survey_people
+		WHERE surv_no = #{survNo}
+		ORDER BY surv_no
+	</select>
+	
+	<select id="selectSurveyInfo" resultMap="surveyResult">
+		SELECT surv_no
+				, class_id
+				, notice_no
+				, surv_title
+				, start_date
+				, end_date
+				, FIND_CODENAME(surv_status) AS surv_status
+				, reg_date
+				, FIND_CODENAME(account_type) AS account_type
+		FROM survey
+		WHERE surv_no = #{survNo}
+		ORDER BY surv_no
+	</select>
+	
+	<resultMap type="SurveyVO" id="surveyResult">
+		<id property="survNo" column="surv_no"/>
+		<collection property="question" javaType="ArrayList" column="surv_no" ofType="QuestionVO" select="selectQuestion" />
+	</resultMap>
+	
+	<select id="selectQuestion" resultMap="survQuestionResult">
+		SELECT q.question_no
+				, q.surv_no
+				, q.que_mark_no
+				, q.question_content
+				, FIND_CODENAME(question_check) AS question_check
+		FROM survey_question q JOIN survey s ON (q.surv_no = s.surv_no)
+		WHERE q.surv_no = #{surv_no}
+		ORDER BY q.que_mark_no
+	</select>
+	
+	<resultMap type="QuestionVO" id="survQuestionResult">
+		<id property="questionNo" column="question_no"/>
+		<collection property="answer" javaType="ArrayList" column="question_no" ofType="SurvAnswersVO" select="selectAnswer" />
+	</resultMap>
+	
+	<select id="selectAnswer" resultType="SurvAnswersVO">
+		SELECT  a.answer_no
+		        , a.question_no
+				, a.answer_content
+				, a.ans_mark_no
+		FROM survey_answers a JOIN survey_question q ON(a.question_no = q.question_no)
+		WHERE a.question_no = #{questionNo}
+		ORDER BY a.ans_mark_no
+	</select>
+	 
+	<select id="selectPeopleCnt" resultType="int">
+		SELECT SUM(CASE WHEN  p.surv_answer = 'E402' THEN 1 ELSE 0 END) AS surv_man_no
+		FROM  survey s JOIN survey_people p
+						ON(p.surv_no = s.surv_no)
+		WHERE s.surv_no = #{survNo}
+		GROUP BY s.surv_no
+		ORDER BY s.surv_no
+	</select>
+	
+	<insert id="insertSurvey" parameterType="SurveyVO" useGeneratedKeys="true">
+		<selectKey  keyProperty="survNo"
+					resultType="int"
+					order="BEFORE">
+			SELECT NVL(MAX(surv_no), 0) + 1 FROM survey	
+		</selectKey>
+		INSERT INTO survey
+				(
+					surv_no
+					, class_id
+					, notice_no
+					, surv_title
+					, start_date
+					, end_date
+					<if test="survStatus != null and !survStatus.equals('')">
+						, surv_status
+					</if>
+					, account_type
+				)
+				VALUES
+				(
+					#{survNo}
+					, #{classId}
+					<choose>
+						<when test="noticeNo != null and !noticeNo.equals('')">
+							, #{noticeNo}
+						</when>
+						<otherwise>
+							, 1
+						</otherwise>
+					</choose>
+					, #{survTitle}
+					, #{startDate}
+					, #{endDate}
+					<if test="survStatus != null and !survStatus.equals('')">
+						, #{survStatus}
+					</if>
+					, #{accountType}
+				)
+	</insert>
+	
+	<update id="updateSurvey" parameterType="SurveyVO" useGeneratedKeys="true">
+		UPDATE survey
+		<set>
+			<if test="survTitle != null and !survTitle.equals('')">
+				surv_title = #{survTitle},
+			</if>
+			<if test="startDate != null">
+				start_date = #{startDate},
+			</if>
+			<if test="endDate != null">
+				end_date = #{endDate},
+			</if>
+			<if test="survStatus != null and !survStatus.equals('')">
+				surv_status  = #{survStatus},
+			</if>
+			<if test="accountType != null and !survTitle.equals('')">
+				account_type  = #{accountType}
+			</if>
+		</set>
+		WHERE surv_no = #{survNo}
+	</update>
+	
+	<delete id="deleteSurvey" parameterType="int">
+		DELETE
+		FROM survey
+		WHERE surv_no = #{survNo}
+	</delete>
+</mapper>

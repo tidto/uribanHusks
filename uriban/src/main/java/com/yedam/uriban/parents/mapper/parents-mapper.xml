@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yedam.uriban.parents.mapper.ParentsMapper">
+	<!-- 전체조회 -->
+	<select id="getParentsList" resultType="ParentsVO">
+		SELECT
+		   p.parents_no
+		   ,p.class_id
+		   ,p.member_id
+		   ,p.parents_email
+		   ,p.parents_name
+		   ,p.parents_rel
+		   ,p.parents_tel
+		   ,p.member_no
+		   ,sm.student_name
+		FROM parents p
+			LEFT JOIN student_manage sm ON p.student_no = sm.student_no
+		WHERE p.class_id = #{classId}
+		ORDER BY p.parents_no ASC
+	</select>
+
+	<!-- 단건조회 -->
+	<select id="getParentsInfo" resultType="ParentsVO">
+		SELECT parents_no
+		,class_id
+		,member_id
+		,parents_email
+		,parents_name
+		,parents_rel
+		,parents_tel
+		FROM parents
+		WHERE parents_no = #{parentsNo}
+	</select>
+
+	<!-- 입력 -->
+	<insert id="insertParents" parameterType="ParentsVO">
+		<selectKey keyProperty="parerntsNo" order="BEFORE"
+			resultType="int">
+			SELECT NVL(MAX(parents_no), 0) + 1
+			FROM parents
+		</selectKey>
+		INSERT INTO parents(
+		parents_no
+		,class_id
+		,member_id
+		,parents_email
+		,parents_name
+		,parents_tel
+		)
+		VALUES(
+		#{parentsNo}
+		,#{classId}
+		,#{memberId}
+		,#{parentsEmail}
+		,#{parentsName}
+		,#{parentsTel}
+		)
+	</insert>
+
+	<!-- 수정 -->
+	<update id="updateParents" parameterType="ParentsVO">
+    	UPDATE parents
+    <set>
+        <if test='parentsNo != null and !parentsNo.equals("")'>
+            , parents_no = #{parentsNo}
+        </if>
+        <if test='classId != null and !parentsNo.equals("")'>
+            , class_id = #{classId}
+        </if>
+        <if test='memberId != null and !memberId.equals("")'>
+            , member_id = #{memberId}
+        </if>
+        <if test='parentsEmail != null and !parentsEmail.equals("")'>
+            , parents_email = #{parentsEmail}
+        </if>
+        <if test='parentsName != null and !parentsName.equals("")'>
+            , parents_name = #{parentsName}
+        </if>
+        <if test='parentsRel != null and !parentsRel.equals("")'>
+            , parents_rel = #{parentsRel}
+        </if>
+        <if test='parentsTel != null and !parentsTel.equals("")'>
+            , parents_tel = #{parentsTel}
+        </if>
+    </set>
+    	WHERE member_id = #{memberId}
+	</update>
+
+
+	<!-- 삭제 -->
+	<delete id="deleteParents" parameterType="int">
+		DECLARE
+			v_member_no NUMBER(20);
+		BEGIN
+			v_member_no := #{memberNo};
+		
+		BEGIN
+			DELETE
+			FROM parents
+			WHERE member_no = v_member_no;
+			DELETE
+			FROM class_member
+			WHERE member_no = v_member_no;
+		
+		COMMIT;
+		EXCEPTION
+			WHEN OTHERS THEN
+				ROLLBACK;
+			RAISE;
+		  END;
+		END;
+	</delete>
+
+	<!-- 학부모 가입 -->
+		<insert id="joinParents" parameterType="ParentsVO">
+	    <selectKey keyProperty="parentsNo" order="BEFORE" resultType="int">
+	        SELECT NVL(MAX(parents_no), 0) + 1
+	        FROM parents
+	    </selectKey>
+			INSERT INTO parents (
+			    class_id,
+			    student_no,
+			    student_name,
+			    parents_no,
+			    member_id,
+			    parents_email,
+			    parents_name,
+			    parents_rel,
+			    parents_tel,
+			    member_no
+			)
+			SELECT
+			    #{classId},
+			    s.student_no,
+			    #{studentName},
+			    #{parentsNo},
+			    #{memberId},
+			    #{parentsEmail},
+			    #{parentsName},
+			    #{parentsRel},
+			    #{parentsTel},
+			    #{memberNo}
+			FROM
+			    student_manage s
+			    JOIN class c ON s.class_id = c.class_id
+			WHERE
+			    s.student_name = #{studentName}
+			    AND s.member_id = #{studentId}
+			    AND c.class_pw = #{classPw}
+			    AND c.class_id = #{classId}
+		</insert>
+
+	<!-- 설문 대상자 조회 -->
+	<select id="survParentsList" resultType="ParentsVO">
+		SELECT member_id
+				, (parents_name || '(' || student_name || ')') AS parents_name
+		FROM parents
+		WHERE class_id = #{classId}
+	</select>
+</mapper>

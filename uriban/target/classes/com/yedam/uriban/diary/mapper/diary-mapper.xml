@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yedam.uriban.diary.mapper.DiaryMapper">
+	<!-- 학생 리스트 조회 -->
+	<select id="getStudentList" resultType="StudentVO">
+		SELECT student_no
+		,class_id
+		,student_class_no
+		,member_id
+		,student_email
+		,student_name
+		,birthday
+		,student_img
+		,student_sex
+		FROM student_manage
+		WHERE class_id = #{classId}
+		ORDER BY student_class_no
+	</select>
+
+	<!-- 학생일지 전체 조회 -->
+	<select id="getDiaryInfo" resultType="DiaryVO">
+		    SELECT
+    			d.diary_no,
+    			d.diary_name,
+   				sc.sub_cd_nm AS diary_type,
+    			d.diary_content,
+			    d.achievement,
+			    s.student_name,
+			    s.student_class_no
+    		FROM diary d
+			    LEFT JOIN student_manage s ON d.student_no = s.student_no
+			    LEFT JOIN sub_cd sc ON d.diary_type = sc.sub_cd
+    		WHERE s.student_no = #{studentNo}
+    		<if test="month != null and !month.equals('')">
+		   	 AND TO_NUMBER(TO_CHAR(d.diary_name,'MM')) = ${month}
+		    </if>
+    		ORDER BY d.diary_name DESC
+	</select>
+	
+	<!-- 학생일지 작성 -->
+	<insert id="insertDiary" parameterType="DiaryVO">
+		<selectKey keyProperty="diaryNo" order="BEFORE"
+			resultType="int">
+			SELECT NVL(MAX(diary_no), 0) + 1
+			FROM diary
+		</selectKey>
+		INSERT into diary(
+		student_no
+		,diary_no
+		,diary_name
+		,diary_type
+		,diary_content
+		,achievement
+		)
+		VALUES(
+		#{studentNo}
+		,#{diaryNo}
+		,#{diaryName}
+		,#{diaryType}
+		,#{diaryContent}
+		,#{ach}
+		)
+	</insert>
+
+	<!-- 학생일지 수정 -->
+	<update id="updateDiary" parameterType="DiaryVO">
+		UPDATE dairy
+		<set>
+			<if test='diaryType != null and !diaryType.equals("")'>
+				diary_type = #{diaryType}
+			</if>
+			<if test='diaryContent != null and !diaryContent.equals("")'>
+				,diary_content = #{diaryContent}
+			</if>
+			<if test='ach != null and !ach.equals("")'>
+				,achievement = #{ach}
+			</if>
+		</set>
+		WHERE student_no = #{studentNo}
+	</update>
+
+	<!-- 학생일지 삭제 -->
+	<delete id="deleteDiary" parameterType="int">
+		DELETE FROM	diary
+		WHERE
+		diary_no = #{diaryNo}
+	</delete>
+</mapper>

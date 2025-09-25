@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yedam.uriban.studentanswer.mapper.StudentAnswerMapper">
+	<select id="selectStudentAnswerList" resultType="StudentAnswerVO">
+		SELECT student_answer_no
+			   , submit_test_no
+			   , answer_no
+			   , correct_or_wrong
+			   , wrong_memo
+			   , answer_order
+			   , student_answer
+		FROM student_answer
+		ORDER BY student_answer_no
+	</select>
+	
+	<select id="selectStudentAnswer" resultType="StudentAnswerVO">
+		SELECT student_answer_no
+			   , submit_test_no
+			   , answer_no
+			   , correct_or_wrong
+			   , wrong_memo
+			   , answer_order 
+			   , student_answer
+		FROM student_answer
+		WHERE student_answer_no = #{studentAnswerNo}
+	</select>
+	
+	<select id="selectStudentAnswers" resultType="StudentAnswerVO">
+		SELECT  * 
+		  FROM student_answer a
+		  JOIN submit_test b
+		    ON a.submit_test_no = b.submit_test_no
+		 WHERE member_id = #{memberId}
+		   <if test="homeworkNo gt 0">
+		   AND b.homework_no = #{homeworkNo}
+		   </if>
+		   <if test="correctOrWrong != null and !correctOrWrong.equals('')"> 
+		   AND a.correct_or_wrong = 'C402'
+		   </if>
+	</select>
+	
+	<insert id="insertStudentAnswer" parameterType="StudentAnswerVO">
+		<selectKey keyProperty="studentAnswerNo"
+				   resultType="int"
+				   order="BEFORE">
+			SELECT NVL(MAX(student_answer_no), 0) + 1
+			FROM student_answer
+		</selectKey>
+		INSERT INTO student_answer
+			   (
+					student_answer_no
+					, submit_test_no
+					, answer_no
+					, correct_or_wrong
+					, student_answer
+			   )
+		VALUES (
+					#{studentAnswerNo}
+					, #{submitTestNo}
+					, #{answerNo}
+					, #{correctOrWrong}
+					, #{studentAnswer}
+			   )
+	</insert>
+	
+	<update id="updateStudentAnswer" parameterType="StudentAnswerVO">
+		UPDATE student_answer
+		<set>
+			<if test="correctOrWrong != null and !correctOrWrong.equals('')">
+				correct_or_wrong = #{correctOrWrong}
+			</if>
+			<if test="wrongMemo != null and !wrongMemo.equals('')">
+				wrong_memo = #{wrongMemo}
+			</if>
+		</set>
+		WHERE student_answer_no = #{studentAnswerNo}
+	</update>
+	
+	<update id="updateWrongMemo" parameterType="StudentAnswerVO">
+		UPDATE student_answer
+		   SET wrong_memo = #{wrongMemo}
+		 WHERE student_answer_no = #{studentAnswerNo}
+	</update>
+	
+	<delete id="deleteStudentAnswer" parameterType="int">
+		DELETE FROM student_answer
+		WHERE student_answer_no = #{studentAnswerNo}
+	</delete>
+	
+	<!-- paging -->
+	<select id="getPageList" parameterType="Map" resultMap="homeworkResult">
+		SELECT *	FROM (select rownum rn, tb.* from (
+		
+			  SELECT  *
+			  FROM student_answer a
+			  JOIN submit_test b
+			    ON a.submit_test_no = b.submit_test_no
+			  JOIN test_bank c
+				ON c.test_no = a.answer_no  
+			  <include refid="criteria"></include>
+			  order by b.submit_date DESC
+			  
+		) tb)	WHERE rn BETWEEN #{startNo} AND #{endNo}
+	</select>
+	<select id="getCount" resultType="int">
+		select count(*)
+		FROM student_answer a
+		JOIN submit_test b
+		  ON a.submit_test_no = b.submit_test_no
+	    JOIN test_bank c
+	      ON c.test_no = a.answer_no
+		<include refid="criteria"></include>
+	</select>
+	
+	<sql id="criteria">
+		<where>
+			   <if test="memberId != null and !memberId.equals('')"> 
+			   AND b.member_id = #{memberId}
+			   </if>
+			   <if test="correctOrWrong != null and !correctOrWrong.equals('')"> 
+			   AND a.correct_or_wrong = 'C402'
+			   </if>
+			   <if test="subjectNo != null and subjectNo != ''">
+		  		AND subject_no = #{subjectNo}
+		  	   </if>
+		  	   <if test="startDt != null and startDt != ''">  	   
+		  	    AND <![CDATA[submit_date >= TO_DATE(#{startDt}, 'YYYY-MM-DD') ]]> 
+		  	   </if>
+		  	   <if test="endDt != null and endDt != ''">
+		  		AND <![CDATA[submit_date <= TO_DATE(#{endDt}, 'YYYY-MM-DD') ]]> 
+		  	   </if>
+		  	   
+		</where>
+	</sql>
+	
+	<resultMap id="homeworkResult" type="TestBankVO">
+	    <id property="testNo" column="test_no"/>
+	  	<collection property="answers" javaType="ArrayList" column="test_no" ofType="TestAnswerVO" select="selectQuestionAnswer"/>
+	</resultMap>
+	
+	<select id="selectQuestionAnswer" resultType="TestAnswerVO">
+		select test_answer, test_no, answer_no
+		from test_answer
+		where test_no=#{testNo}
+	</select>
+
+	
+</mapper>

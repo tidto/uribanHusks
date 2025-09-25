@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yedam.uriban.album.down.detail.mapper.DownDetailHistoryMapper">
+
+<select id="selectDownDetailHistoryList" resultType="DownDetailHistoryVO">
+	SELECT down_detail_no
+		 , img_no
+		 , down_no	
+	  FROM down_detail_history
+  ORDER BY down_detail_no 
+</select>
+
+<select id="selectDownDetailHistoryInfo" resultType="DownDetailHistoryVO" parameterType="int">
+	SELECT down_detail_no
+		 , img_no
+		 , down_no	
+	  FROM down_detail_history
+	 WHERE down_detail_no = #{downDetailNo} 
+</select>
+
+<select id="selectDownDetailHistoryInfoWithDownNo" resultType="DownDetailHistoryVO" parameterType="int">
+	SELECT a.down_detail_no
+		 , a.img_no
+		 , a.down_no
+		 , b.original_filename	
+	  FROM down_detail_history a
+	  JOIN image b
+	    ON a.img_no = b.img_no
+	 WHERE a.down_no = #{downNo} 
+</select>
+
+<insert id="insertDownDetailHistory" parameterType="DownDetailHistoryVO">
+	<selectKey keyProperty="downDetailNo"
+ 			   resultType="int"
+ 			   order="BEFORE">
+ 		SELECT NVL(MAX(down_detail_no),0) + 1
+ 		FROM down_detail_history
+ 	</selectKey>
+ 	
+ 	INSERT INTO down_detail_history
+ 			(
+ 				down_detail_no
+			  , img_no
+			  , down_no
+ 			)
+ 		  VALUES
+ 		    (
+ 		    	#{downDetailNo}
+ 		       ,#{imgNo}
+ 		       ,#{downNo}
+ 		    )
+ 			
+</insert>
+
+</mapper>

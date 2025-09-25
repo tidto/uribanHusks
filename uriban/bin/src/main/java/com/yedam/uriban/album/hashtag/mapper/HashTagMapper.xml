@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  <mapper namespace="com.yedam.uriban.album.hashtag.mapper.HashTagMapper">
+  
+  <!-- 전체조회 -->
+  <select id="selectHashTagList" resultType="HashTagVO">
+  SELECT	tag_no
+  			,album_no
+  			,tag
+   FROM hash_tag
+  ORDER BY tag_no
+  </select>
+  
+  <!-- 전체조회 -->
+  <select id="selectHashTagAlbumList" resultType="HashTagVO" parameterType="int">
+  SELECT	tag_no
+  			,album_no
+  			,tag
+   FROM hash_tag
+  WHERE album_no = #{albumNo}
+  ORDER BY tag_no
+  </select>
+  
+  <!-- 단건조회 -->
+  <select id="selectHashTagInfo" parameterType="HashTagVO" resultType="HashTagVO">
+  SELECT	tag_no
+  			,album_no
+  			,tag
+   FROM hash_tag
+  WHERE tag_no = #{tagNo}
+  </select>
+  
+  <!-- 등록 -->
+  <insert id="insertHashTag" parameterType="HashTagVO">
+  	<selectKey keyProperty="tagNo"
+ 			   resultType="int"
+ 			   order="BEFORE">
+ 		SELECT NVL(MAX(tag_no),0) + 1
+ 		FROM hash_tag
+ 	</selectKey>
+
+ 	INSERT INTO hash_tag
+ 			(
+ 				tag_no
+ 				, album_no
+ 				, tag
+ 			)
+ 		VALUES
+ 			(
+ 				#{tagNo}
+ 				, #{albumNo}
+ 				, #{tag}
+ 			)	
+  </insert>
+  
+  <!-- 수정 -->
+  
+  <!-- 삭제 -->
+  <delete id="deleteHashTag" parameterType="int">
+  	DELETE FROM hash_tag
+  	WHERE album_no = #{albumNo}
+  </delete>
+  
+  </mapper>

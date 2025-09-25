@@ -1,0 +1,262 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yedam.uriban.homework.mapper.HomeworkMapper">
+	<select id="selectHomeworkList" resultType="HomeworkVO">
+		SELECT ROWNUM rn
+			   , h.homework_no
+			   , class_id
+			   , homework_title
+			   , homework_rdate
+			   , homework_ddate
+			   , SYSDATE as today
+			   , (select count(t.homework_no)
+				  from test t
+                  where t.homework_no=h.homework_no) as problem_count
+			   , (select count (submit_test_no)
+            	  from submit_test s
+				  where answer_state = 'C301'
+				  and s.homework_no = h.homework_no) as submit_count
+			   , (SELECT count(student_no)
+				  FROM student_manage
+				  WHERE class_id = #{classId}) as all_student
+			   , FIND_CODENAME(homework_status) as homework_status
+		   	   , FIND_CODENAME(test_subject) as test_subject
+		FROM homework h
+	   	<include refid="criteria"></include>
+		ORDER BY rn
+	</select>
+	
+	<select id="selectHomeworkListTest" resultType="HomeworkVO">
+		SELECT h.homework_no
+			   , class_id
+			   , homework_title
+			   , homework_rdate
+			   , homework_ddate
+			   , TRUNC(SYSDATE) as today
+			   , (select count(test_no)
+						  from test 
+						  where homework_no = h.homework_no) as problem_count
+			   , (select count (submit_test_no)
+            	  from submit_test s
+				  where answer_state = 'C301'
+				  and s.homework_no = h.homework_no) as submit_count
+			   , (SELECT count(student_no)
+				  FROM student_manage
+				  WHERE class_id = #{classId}) as all_student
+			   , FIND_CODENAME(homework_status) as homework_status
+		   	   , FIND_CODENAME(test_subject) as test_subject
+		FROM homework h
+	   	<include refid="criteria"></include>
+		ORDER BY homework_rdate DESC
+	</select>
+	
+	<select id="selectStudentHomeworkList" resultType="HomeworkVO">
+		<!-- select의 homework_no 와 subquery의 homework_no를 join할 수 있는가? -->
+		<!-- 다른 조인을 통해서는 가능한가? -->
+		<!-- pl/sql 활용은? -->
+		SELECT w.homework_no
+			   , w.homework_title
+			   , w.homework_rdate
+			   , w.homework_ddate
+			   , (select count(homework_no)
+   				  from test
+				  WHERE homework_no = 1) as problem_count
+			   , s.answer_state
+			   , s.total_score
+		FROM homework w LEFT OUTER JOIN submit_test s 
+                                     ON (s.homework_no = w.homework_no)
+		WHERE class_id = 'ban01'
+		ORDER BY w.homework_no DESC
+	</select>
+	
+	<select id="selectHomework" resultType="HomeworkVO">
+		SELECT homework_no
+           , class_id
+           , homework_title
+           , homework_rdate
+			   , homework_ddate
+			   , (select count(t.homework_no)
+                from test t, homework h where t.homework_no = h.homework_no and t.homework_no=#{homeworkNo}) as problem_count
+			   , ((select count(submit_test_no) from submit_test s join homework h on(s.homework_no = h.homework_no) where answer_state = FIND_CODENAME(submit_count))
+                || '/' ||
+                (SELECT count(student_no)
+                FROM student_manage
+                where class_id=#{classId})) as submit_count
+			   , FIND_CODENAME(homework_status) as homework_status
+		   	   , test_subject
+		FROM homework
+		WHERE homework_no = #{homeworkNo}
+	</select>
+	
+	<insert id="insertHomework" parameterType="HomeworkVO">
+		<selectKey keyProperty="homeworkNo"
+				   resultType="int"
+				   order="BEFORE">
+			SELECT NVL(MAX(homework_no), 0) + 1
+			FROM homework
+		</selectKey>
+		INSERT INTO homework
+				(
+					homework_no
+					, class_id
+					, homework_title
+					, homework_rdate
+					, homework_ddate
+					, problem_count
+					, submit_count
+					, homework_status
+					, test_subject
+				)
+		VALUES  (
+					#{homeworkNo}
+					, #{classId}
+					, #{homeworkTitle}
+					, SYSDATE
+					, #{homeworkDdate}
+					, #{problemCount}
+					, 0
+					, 'C101'
+					, #{testSubject}
+				)
+	</insert>
+	
+	<!-- 수정 -->
+	<update id="updateHomework" parameterType="HomeworkVO">
+		UPDATE homework
+		<set>
+			<if test="homeworkTitle != null and !homeworkTitle.equals('')">
+				homework_title = #{homeworkTitle},
+			</if>
+			<if test="homeworkDdate != null">
+				homework_ddate = #{homeworkDdate},
+			</if>
+			<if test="testSubject != null and !testSubject.equals('')">
+				test_subject = #{testSubject},
+			</if>
+		</set>
+		WHERE homework_no = #{homeworkNo}
+	</update>
+	
+	<!-- 삭제 -->
+	<delete id="deleteHomework" parameterType="int">
+		DELETE FROM homework
+		WHERE homework_no = #{homeworkNo}
+	</delete>
+	
+	<delete id="deleteTestInHomework" parameterType="int">
+		DELETE FROM test
+		WHERE homework_no = #{homeworkNo}
+	</delete>
+	
+	<!-- paging -->
+	<select id="getPageList" parameterType="Map" resultType="HomeworkVO">
+	with hw as (SELECT h.homework_no
+								   , class_id
+								   , homework_title
+								   , homework_rdate
+								   , homework_ddate
+								   , TRUNC(SYSDATE) as today
+								   , (SELECT count(test_no)
+									  FROM test 
+									  WHERE homework_no = h.homework_no) as problem_count
+								   , (SELECT COUNT (submit_test_no)
+					            	  FROM submit_test s
+									  WHERE answer_state = 'C301'
+									  AND s.homework_no = h.homework_no) as submit_count
+								   , (SELECT COUNT(student_no)
+									  FROM student_manage
+									  WHERE class_id = #{classId}) as all_student
+							   	   , FIND_CODENAME(test_subject) as test_subject
+							   	   <if test="student != null and !student.equals('')">
+							   	   , NVL(FIND_CODENAME((SELECT s.answer_state 
+							   	   						FROM submit_test s 
+							   	   	   					WHERE s.homework_no = h.homework_no 
+							   	   	     				AND s.member_id = #{memberId})),'미제출') as answer_state
+					           	   , NVL((SELECT s.total_score 
+							   	   	 	  FROM submit_test s 
+							   	   	      WHERE s.homework_no = h.homework_no 
+							   	   	      AND s.member_id = #{memberId}),0) as total_score
+							   	   </if>
+							FROM homework h)
+	
+		SELECT *  FROM 	(	SELECT ROWNUM as R, A.* FROM	(
+			
+			select * 
+			  from ( SELECT hw.*, 
+			                CASE WHEN TRUNC(homework_ddate) <![CDATA[<]]> TRUNC(today) then FIND_CODENAME('C103')
+				                 WHEN submit_count = '0' then FIND_CODENAME('C101')
+				                 WHEN submit_count >= all_student then FIND_CODENAME('C103')
+				                 ELSE FIND_CODENAME('C102')
+				                  END as homework_status
+					  FROM hw 
+				    )							
+							
+			 <include refid="criteria"></include>
+			 ORDER BY homework_rdate DESC
+	
+	 ) A	)	WHERE R BETWEEN #{startNo} AND #{endNo}
+	</select>
+	<select id="getCount" resultType="int">
+	with hw as (SELECT h.homework_no
+								   , class_id
+								   , homework_title
+								   , homework_rdate
+								   , homework_ddate
+								   , TRUNC(SYSDATE) as today
+								   , (SELECT count(test_no)
+									  FROM test 
+									  WHERE homework_no = h.homework_no) as problem_count
+								   , (SELECT COUNT (submit_test_no)
+					            	  FROM submit_test s
+									  WHERE answer_state = 'C301'
+									  AND s.homework_no = h.homework_no) as submit_count
+								   , (SELECT COUNT(student_no)
+									  FROM student_manage
+									  WHERE class_id = #{classId}) as all_student
+							   	   , FIND_CODENAME(test_subject) as test_subject
+							   	   <if test="student != null and !student.equals('')">
+							   	   , NVL(FIND_CODENAME((SELECT s.answer_state 
+							   	   						FROM submit_test s 
+							   	   	   					WHERE s.homework_no = h.homework_no 
+							   	   	     				AND s.member_id = #{memberId})),'미제출') as answer_state
+					           	   , NVL((SELECT s.total_score 
+							   	   	 	  FROM submit_test s 
+							   	   	      WHERE s.homework_no = h.homework_no 
+							   	   	      AND s.member_id = #{memberId}),0) as total_score
+							   	   </if>
+							FROM homework h)
+							
+			select count(*) 
+			  from ( SELECT hw.*, 
+			                CASE WHEN TRUNC(homework_ddate) <![CDATA[<]]> TRUNC(today) then FIND_CODENAME('C103')
+				                 WHEN submit_count = '0' then FIND_CODENAME('C101')
+				                 WHEN submit_count >= all_student then FIND_CODENAME('C103')
+				                 ELSE FIND_CODENAME('C102')
+				                  END as homework_status
+					  FROM hw 
+				    )							
+	<include refid="criteria"></include>
+	</select>
+	
+	<sql id="criteria">
+		<where>
+			<if test="testSubject != null and testSubject != ''">
+		  		AND test_subject = #{testSubject}
+		  	</if>
+		  	<if test="td != null and td != ''">
+		  		AND <![CDATA[TO_CHAR(SYSDATE, 'YYYYMMDD') <= TO_CHAR(homework_ddate, 'YYYYMMDD') ]]> 	
+		  	</if>
+		  	<if test="classId gt 0">
+		  	 	AND class_id = #{classId}
+		  	</if>
+		  	<if test="homeworkStatus != null and homeworkStatus != ''">
+		  		AND homework_status = #{homeworkStatus} 
+		  	</if>
+		  	<if test="keyword != null and keyword != ''">
+		  		AND homework_title LIKE '%'||#{keyword}||'%'
+		  	</if>
+		</where>
+	</sql>
+</mapper>

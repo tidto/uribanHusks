@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yedam.uriban.submittest.mapper.SubmitTestMapper">
+	<select id="selectSubmitTestList" resultType="SubmitTestVO">
+		SELECT *, (select member_name from member where member_id = #{memberId})as member_name
+		FROM submit_test t join homework h on (t.homework_no = h.homework_no)
+		ORDER BY submit_test_no DESC
+	</select>
+	
+	<select id="selectSubmitTest" resultType="SubmitTestVO">
+		SELECT submit_test_no
+			   , homework_no
+			   , member_id
+			   , answer_state
+			   , total_score
+			   , answer_percent
+		FROM submit_test	
+		WHERE submit_test_no = #{submitTestNo}	
+	</select>
+	
+	<select id="selectSubmitTestWithHomework" resultType="SubmitTestVO">
+		SELECT submit_test_no
+			   , homework_no
+			   , member_id
+			   , answer_state
+			   , total_score
+			   , answer_percent
+		FROM submit_test	
+		WHERE homework_no = #{homeworkNo}
+		  AND member_id = #{memberId}	
+	</select>
+	
+	<insert id="insertSubmitTest" parameterType="SubmitTestVO">
+		<selectKey keyProperty="submitTestNo"
+				   resultType="int"
+				   order="BEFORE">
+			SELECT NVL(MAX(submit_test_no), 0) + 1
+			FROM submit_test
+		</selectKey>
+		INSERT INTO submit_test
+			   (
+					submit_test_no
+					, homework_no
+					, member_id
+					, answer_state
+					, total_score
+					, answer_percent
+					, submit_date
+			   )
+		VALUES (
+					#{submitTestNo}
+					, #{homeworkNo}
+					, #{memberId}
+					, 'C301'
+					, #{totalScore}
+					, #{answerPercent}
+					, sysdate
+				)
+	</insert>
+	
+	<update id="updateSubmitTest" parameterType="SubmitTestVO">
+		UPDATE submit_test
+		<set>
+			<if test="answerState != null and !answerState.equals('')">
+				answer_state = #{answerState},
+			</if>
+			<if test="totalScore gt 0">
+				total_score = #{totalScore},
+			</if>
+			<if test="answerPercent != null and !answerPercent.equals('')">
+				answer_percent = #{answerPercent},
+			</if>
+		</set>
+		WHERE submit_test_no = #{submitTestNo}
+	</update>
+	
+	<delete id="deleteSubmitTest" parameterType="int">
+		DELETE FROM submit_test
+		WHERE submit_test_no = #{submitTestNo}
+	</delete>
+	
+	<!-- paging -->
+	<select id="getPageList" parameterType="Map" resultType="SubmitTestVO">
+		SELECT *	FROM (select rownum rn, tb.* from (
+		
+			select *
+			from submit_test a join member b on(a.member_id = b.member_id)
+			where homework_no = #{homeworkNo}
+			order by submit_test_no DESC
+			  
+		) tb)	WHERE rn BETWEEN #{startNo} AND #{endNo}
+	</select>
+	<select id="getCount" resultType="int">
+		select count(*)
+		from submit_test
+		where homework_no = #{homeworkNo}
+	</select>
+</mapper>

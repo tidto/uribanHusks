@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yedam.uriban.survey.question.mapper.QuestionMapper">
+	<select id="selectQuestionList" resultType="QuestionVO">
+		SELECT question_no
+				, surv_no
+				, que_mark_no
+				, question_content
+				, FIND_CODENAME(question_check) AS question_check
+		FROM survey_question
+		ORDER BY question_no
+	</select>
+	
+	<select id="selectQuestionInfo" resultType="QuestionVO">
+		SELECT question_no
+				, surv_no
+				, que_mark_no
+				, question_content
+				, FIND_CODENAME(question_check) AS question_check
+		FROM survey_question
+		WHERE surv_no = #{survNo}
+		ORDER BY que_mark_no
+	</select>
+	
+	<insert id="insertQuestion" parameterType="QuestionVO" useGeneratedKeys="true">
+		<selectKey keyProperty="questionNo"
+ 			   		resultType="int" 
+ 			   		order="BEFORE">
+	 		SELECT NVL(MAX(question_no), 0) + 1
+			FROM survey_question
+ 		</selectKey>
+		INSERT INTO survey_question
+				(
+					question_no
+					, surv_no
+					, que_mark_no
+					, question_content
+					, question_check
+				)
+		VALUES 	
+				(
+					#{questionNo}
+					, #{survNo}
+					, #{queMarkNo}
+					, #{questionContent}
+					, #{questionCheck}
+				)
+	</insert>
+	
+	<update id="updateQuestion" parameterType="QuestionVO" useGeneratedKeys="true">
+		UPDATE survey_question
+		<set>
+			<if test="queMarkNo != null and !queMarkNo.equals('')">
+				que_mark_no = #{queMarkNo},
+			</if>
+			<if test="questionContent != null and !questionContent.equals('')">
+				question_content = #{questionContent},
+			</if>
+			<if test="questionCheck != null and !questionCheck.equals('')">
+				question_check = #{questionCheck}
+			</if>
+		</set>
+		WHERE question_no = #{questionNo}
+	</update>
+	
+	<delete id="deleteQuestion" parameterType="int">
+		DELETE 
+		FROM survey_question 
+		WHERE surv_no = #{survNo}
+	</delete>
+	
+	<delete id="deleteSelectQuestion" parameterType="QuestionVO">
+		DELETE
+		FROM survey_question
+		WHERE question_no = #{questionNo}
+	</delete>
+</mapper>

@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yedam.uriban.album.image.mapper.ImageMapper">
+
+<!-- 전체조회 -->
+<select id="selectImageList" resultType="ImageVO">
+	SELECT img_no
+		   ,album_no
+		   ,original_filename
+		   ,rename_filename
+		   ,img_date
+	FROM image
+	ORDER BY img_no
+</select>
+
+<!-- 반 사진 전체조회 -->
+<select id="selectImageListWithClass" resultType="ImageVO" parameterType="int">
+	SELECT a.img_no
+		   ,a.album_no
+		   ,a.original_filename
+		   ,a.rename_filename
+		   ,a.img_date
+	FROM image a
+    JOIN album b
+      ON a.album_no = b.album_no
+   WHERE b.class_id = #{classId}
+	ORDER BY img_no
+</select>
+
+<!-- 앨범별 조회 -->
+<select id="selectImageAlbumList" resultType="ImageVO" parameterType="int">
+	SELECT img_no
+		   ,album_no
+		   ,original_filename
+		   ,rename_filename
+		   ,img_date
+	FROM image
+	WHERE album_no = #{albumNo}
+	ORDER BY img_no
+</select>
+
+<!-- 단건조회 -->
+<select id="selectImageInfo" resultType="ImageVO" parameterType="ImageVO">
+	SELECT img_no
+		   ,album_no
+		   ,original_filename
+		   ,rename_filename
+		   ,img_date
+	FROM image
+	WHERE img_no = #{imgNo}
+</select>
+
+<!-- 등록 -->
+<insert id="insertImage" parameterType="ImageVO">
+	<selectKey keyProperty="imgNo"
+ 			   resultType="int"
+ 			   order="BEFORE">
+ 		SELECT NVL(MAX(img_no),0) + 1
+ 		FROM image
+ 	</selectKey>
+	INSERT INTO image
+		(
+			img_no
+			, album_no
+			, original_filename
+			, rename_filename
+			, img_date
+		)
+	VALUES
+		(
+			#{imgNo}
+			, #{albumNo}
+			, #{originalFilename}
+			, #{renameFilename}
+			, sysdate
+		)
+</insert>
+
+<!-- 수정 -->
+
+<!-- 삭제 -->
+<delete id="deleteImage" parameterType="int">
+	DELETE FROM image
+	WHERE album_no = #{albumNo} 
+</delete>
+
+</mapper>

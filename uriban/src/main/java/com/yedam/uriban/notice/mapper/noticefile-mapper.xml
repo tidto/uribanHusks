@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yedam.uriban.notice.mapper.NoticeFileMapper">
+
+<!--  공지 첨부 파일 - 게시물 별 단건 or 다건 조회 - noticeNo -->
+	<select id="selectNoticeFile" resultType="NoticeFileVO" parameterType="int">
+		SELECT f.file_no
+			,f.originalfile_name
+			,f.savefile_name
+			,n.notice_no
+		FROM notice_file f join notice n 
+			ON (f.notice_no = n.notice_no)
+		WHERE n.notice_no = #{noticeNo}
+	</select>
+	
+	<!-- 단건 정보 -->
+	<select id="selectNoticeFileInfo" resultType="NoticeFileVO">
+		SELECT file_no
+			,originalfile_name
+			,savefile_name
+			,notice_no
+		FROM notice_file
+		WHERE file_no = #{fileNo}
+	</select>
+	
+<!-- 공지 첨부 파일 - 등록_notice 작성 시 동시 발동	 -->
+	<insert id="insertNoticeFile" parameterType="NoticeFileVO">
+		<selectKey keyProperty="fileNo"
+				   resultType="int"
+				   order="BEFORE">
+		   SELECT NVL(MAX(file_no),0) + 1
+		   FROM notice_file
+		</selectKey>
+		INSERT INTO notice_file
+			(
+				file_no
+				,originalfile_name
+				,savefile_name
+				,notice_no	
+			)
+		VALUES(
+				#{fileNo}
+				,#{originalfileName}
+				,#{savefileName}
+				,#{noticeNo}
+			)
+		
+	</insert>
+	
+<!-- 공지 첨부 파일 - 수정_notice 수정 시 선택적으로  -->
+<!-- 	<update id="updateNoticeFile" parameterType="NoticeFileVO"> -->
+		
+<!-- 	</update> -->
+
+<!-- 공지 첨부 파일 - 삭제_notice 삭제 시 동시 삭제 - noticeNo -->
+	<delete id="deleteNoticeFile" parameterType="int">
+		DELETE FROM notice_file
+		WHERE notice_no = #{noticeNo};
+	</delete>
+	
+	
+</mapper>

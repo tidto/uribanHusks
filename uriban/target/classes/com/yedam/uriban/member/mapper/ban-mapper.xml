@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper
+	namespace="com.yedam.uriban.member.mapper.BanMapper">
+	<!-- 제한이력 조회 -->
+	<select id="getBanList" resultType="BanVO">
+		SELECT BAN_NO
+		, REPORT_NO
+		, FIND_CODENAME(BAN_TYPE) AS BAN_TYPE
+		, MEMBER_ID
+        , BAN_COUNT
+		, BAN_DAY
+		, BAN_START_DATE
+		, BAN_END_DATE
+
+		FROM MEMBER_BAN
+        ORDER BY BAN_NO DESC
+	</select>
+
+
+	<!-- 제한이력 생성 -->
+	<update id="insertBan" parameterType="hashMap" statementType="CALLABLE">
+		{call 
+			UPDATE_BANLOG(
+				#{reportNo, mode=IN, jdbcType=INTEGER}
+			    , #{banType, mode=IN, jdbcType=VARCHAR}
+			    , #{memberId, mode=IN, jdbcType=VARCHAR}
+			    , #{banCount, mode=IN, jdbcType=INTEGER}
+			    , #{banDay, mode=IN, jdbcType=INTEGER}
+		)}
+    </update>
+    
+    <!--  제한 끝 -->
+    <select id="endBanMember" resultType="BanVO">
+    	<![CDATA[  
+	    	SELECT MEMBER_ID, MAX(BAN_END_DATE) AS BAN_END_DATE
+	        FROM MEMBER_BAN
+	        WHERE  BAN_END_DATE <= SYSDATE
+	        GROUP BY MEMBER_ID
+        ]]>
+    </select>
+    
+    <!-- 밴종료 찾기 -->
+    
+
+
+</mapper>

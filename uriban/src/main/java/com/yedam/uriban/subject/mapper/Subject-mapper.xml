@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yedam.uriban.subject.mapper.SubjectMapper">
+	<select id="selectSubjectList" resultType="SubjectVO">
+		SELECT subject_no
+			   , subject_name
+		FROM subject
+		ORDER BY subject_no
+	</select>
+	
+	<select id="selectSubject" resultType="SubjectVO">
+		SELECT subject_no
+			   , subject_name
+		FROM subject 
+		WHERE subject_no = #{subjectNo}
+	</select>
+	
+	<insert id="insertSubject" parameterType="SubjectVO">
+		<selectKey keyProperty="subjectNo"
+				   resultType="int"
+				   order="BEFORE">
+			SELECT NVL(MAX(subject_no), 0) + 1
+			FROM subject
+		</selectKey>
+		INSERT INTO subject
+				(
+					subject_no
+					, subject_name
+				)
+		VALUES	(
+					#{subjectNo}
+					, #{subjectName}
+				)
+	</insert>
+	
+	<delete id="deleteSubject" parameterType="int">
+		DELETE FROM subject
+		WHERE subject_no = #{subjectNo}
+	</delete>
+</mapper>

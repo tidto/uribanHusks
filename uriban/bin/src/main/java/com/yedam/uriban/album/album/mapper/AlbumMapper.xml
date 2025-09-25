@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+ <mapper namespace="com.yedam.uriban.album.album.mapper.AlbumMapper">
+ 
+ <select id="getNextAlbumNo" resultType="int">
+ SELECT NVL(MAX(album_no),0) + 1
+   FROM album
+ </select>
+ 
+ <!-- 전체조회 -->
+ <select id="selectAlbumList" resultType="AlbumVO">
+  SELECT	album_no
+  			,class_no
+  			,content
+  			,place
+  			,album_date
+  			,like_count
+  	FROM album
+  	ORDER BY album_no
+ </select>
+ 
+ <!-- Like 조회 -->
+ <select id="selectAlbumLike" resultType="AlbumVO" parameterType="String">
+   SELECT	a.album_no
+  			,a.class_no
+  			,a.content
+  			,a.place
+  			,a.album_date
+  			,a.like_count
+  	FROM album a
+  	JOIN like b 
+  	  ON a.album_no = b.album_no
+   WHERE b.member_id = #{memberId}
+ </select>
+ 
+ <!-- 월 조회 -->
+ <select id="selectAlbumMonth" resultType="AlbumVO" parameterType="int">
+  SELECT	a.album_no
+  			,a.class_no
+  			,a.content
+  			,a.place
+  			,a.album_date
+  			,a.like_count
+  	FROM album a
+   WHERE TO_NUMBER(TO_CHAR(a.album_date,'MM')) = #{month}
+ </select>
+  
+ <!-- 단건조회 --> 
+ <select id="selectAlbumInfo" resultType="AlbumVO" parameterType="int">
+ SELECT	album_no
+  			,class_no
+  			,content
+  			,place
+  			,album_date
+  			,like_count
+  	FROM album
+   WHERE album_no = #{albumNo}
+ </select>
+  
+ <!-- 등록 -->
+ <insert id="insertAlbum" parameterType="AlbumVO">
+ 	<selectKey keyProperty="albumNo"
+ 			   resultType="int"
+ 			   order="BEFORE">
+ 		SELECT NVL(MAX(album_no),0) + 1
+ 		FROM album
+ 	</selectKey>
+ 	INSERT INTO album
+ 			(
+ 				album_no
+ 				, class_no
+ 				, content
+ 				, place
+ 				, album_date
+ 				, like_count
+ 			)
+ 		VALUES
+ 			(
+ 				#{albumNo}
+ 				, #{classNo}
+ 				, #{content}
+ 				, #{place}
+ 				, sysdate
+ 				, 0
+ 			)		
+ </insert>
+ 
+ <!-- 수정 -->
+<update id="updateAlbum" parameterType="AlbumVO">
+	UPDATE album
+	<set>
+		<if test="content != null and !content.equals('')">
+			content = #{content},
+		</if>
+		<if test="place != null and !place.equals('')">
+			place = #{place}
+		</if>
+	</set>
+	WHERE album_no = #{albumNo}
+</update>
+
+ <!-- 삭제 -->
+ <delete id="deleteAlbum" parameterType="int">
+ 	DELETE FROM album
+ 	WHERE album_no = #{albumNo}
+ </delete>
+ 
+ </mapper>

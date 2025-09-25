@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yedam.uriban.studentanswer.mapper.StudentAnswerMapper">
+	<select id="selectStudentAnswerList" resultType="StudentAnswerVO">
+		SELECT student_answer_no
+			   , submit_test_no
+			   , answer_no
+			   , correct_or_wrong
+			   , wrong_memo
+			   , answer_order
+		FROM student_answer
+		ORDER BY student_answer_no
+	</select>
+	
+	<select id="selectStudentAnswer" resultType="StudentAnswerVO">
+		SELECT student_answer_no
+			   , submit_test_no
+			   , answer_no
+			   , correct_or_wrong
+			   , wrong_memo
+			   , answer_order 
+		FROM student_answer
+		WHERE student_answer_no = #{studentAnswerNo}
+	</select>
+	
+	<insert id="insertStudentAnswer" parameterType="StudentAnswerVO">
+		<selectKey keyProperty="studentAnswerNo"
+				   resultType="int"
+				   order="BEFORE">
+			SELECT NVL(MAX(student_answer_no), 0) + 1
+			FROM student_answer
+		</selectKey>
+		INSERT INTO student_answer
+			   (
+					student_answer_no
+					, submit_test_no
+					, answer_no
+					, correct_or_wrong
+			   )
+		VALUES (
+					#{studentAnswerNo}
+					, #{submitTestNo}
+					, #{answerNo}
+					, #{correctOrWrong}
+			   )
+	</insert>
+	
+	<update id="updateStudentAnswer" parameterType="StudentAnswerVO">
+		UPDATE student_answer
+		<set>
+			<if test="correctOrWrong != null and !correctOrWrong.equals('')">
+				correct_or_wrong = #{correctOrWrong}
+			</if>
+		</set>
+		WHERE student_answer_no = #{studentAnswerNo}
+	</update>
+	
+	<delete id="deleteStudentAnswer" parameterType="int">
+		DELETE FROM student_answer
+		WHERE student_answer_no = #{studentAnswerNo}
+	</delete>
+</mapper>

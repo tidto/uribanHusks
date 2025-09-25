@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yedam.uriban.submittest.mapper.SubmitTestMapper">
+	<select id="selectSubmitTestList" resultType="SubmitTestVO">
+		SELECT submit_test_no
+			   , homework_no
+			   , member_id
+			   , answer_state
+			   , total_score
+			   , answer_percent
+		FROM submit_test
+		ORDER BY submitTest_no
+	</select>
+	
+	<select id="selectSubmitTest" resultType="SubmitTestVO">
+		SELECT submit_test_no
+			   , homework_no
+			   , member_id
+			   , answer_state
+			   , total_score
+			   , answer_percent
+		FROM submit_test
+		WHERE submit_test_no = #{submitTestNo}
+	</select>
+	
+	<insert id="insertSubmitTest" parameterType="SubmitTestVO">
+		<selectKey keyProperty="submitTestNo"
+				   resultType="int"
+				   order="BEFORE">
+			SELECT NVL(MAX(submit_test_no), 0) + 1
+			FROM submit_test
+		</selectKey>
+		INSERT INTO submit_test
+			   (
+					submitTest_no
+					, homework_no
+					, member_id
+					, answer_state
+			   )
+		VALUES (
+					#{submitTestNo}
+					, #{homeworkNo}
+					, #{memberId}
+					, #{answerState}
+				)
+	</insert>
+	
+	<update id="updateSubmitTest" parameterType="SubmitTestVO">
+		UPDATE submit_test
+		<set>
+			<if test="answerState != null and !answerState.equals('')">
+				answer_state = #{answerState}
+			</if>
+		</set>
+		WHERE submit_test_no = #{submitTestNo}
+	</update>
+	
+	<delete id="deleteSubmitTest" parameterType="int">
+		DELETE FROM submit_test
+		WHERE submit_test_no = #{submitTestNo}
+	</delete>
+</mapper>

@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+ 
+<mapper namespace="com.yedam.uriban.album.like.mapper.LikeMapper">
+
+<!-- 전체조회 -->
+<select id="selectLikeList" resultType="LikeVO" parameterType="String">
+	SELECT like_no
+		   , album_no
+		   , member_id
+	  FROM album_like
+	 WHERE member_id = #{memberId}
+  	 ORDER BY like_no 
+</select>
+
+<!-- 단건조회 -->
+<select id="selectLikeInfo" resultType="LikeVO" parameterType="int">
+	SELECT like_no
+		   , album_no
+		   , member_id
+	  FROM album_like
+	 WHERE like_no = #{likeNo}
+</select>
+
+<!-- 등록 -->
+<insert id="insertLike" parameterType="LikeVO">
+	<selectKey keyProperty="likeNo"
+ 			   resultType="int"
+ 			   order="BEFORE">
+ 		SELECT NVL(MAX(like_no),0) + 1
+ 		FROM album_like
+ 	</selectKey>
+ 	INSERT INTO album_like
+ 		(
+ 			like_no
+ 			, album_no
+ 			, member_id
+ 		)
+ 	VALUES
+ 		(
+ 			#{likeNo}
+ 			, #{albumNo}
+ 			, #{memberId}
+ 		)
+ 	
+</insert>
+
+<!-- 수정 -->
+
+<!-- 삭제 -->
+<delete id="deleteLike" parameterType="LikeVO">
+	DELETE FROM album_like
+	WHERE album_no = #{albumNo}
+	<if test="memberId != null and !memberId.equals('')">
+	  AND member_id = #{memberId}
+	</if>
+</delete>
+
+</mapper>

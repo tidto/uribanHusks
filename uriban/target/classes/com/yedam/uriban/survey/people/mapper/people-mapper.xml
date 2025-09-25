@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yedam.uriban.survey.people.mapper.PeopleMapper">
+	<!-- surveyCustList 화면단 -->
+	<select id="selectPeopleList" resultType="PeopleVO">
+		SELECT surv_man_no
+				, surv_no
+				, member_id
+				, member_name
+				, FIND_CODENAME(surv_answer) AS surv_answer
+				, FIND_CODENAME(account_type) AS account_type
+		FROM survey_people
+		WHERE surv_no = #{survNo}
+		ORDER BY surv_no
+	</select>
+	
+	<!-- surveyAnswerList survNo를 찾기 위함 -->
+	<select id="selectPeopleInfo" resultType="PeopleVO">
+		SELECT surv_man_no
+				, surv_no
+				, member_id
+				, member_name
+				, FIND_CODENAME(surv_answer) AS surv_answer
+				, FIND_CODENAME(account_type) AS account_type
+		FROM survey_people
+		WHERE surv_man_no = #{survManNo}
+	</select>
+	
+	<!-- 응답한 경우 완료로 바꿀 때 사용 -->
+	<select id="selectPeople" resultType="PeopleVO">
+		SELECT surv_man_no
+				, surv_no
+				, member_id
+				, member_name
+				, FIND_CODENAME(surv_answer) AS surv_answer
+				, FIND_CODENAME(account_type) AS account_type
+		FROM survey_people
+		WHERE surv_no = #{survNo} 
+		AND member_id = #{memberId}
+	</select>
+	
+	<!-- selectCntPeople 삭제 시 응답 체크 -->
+	<select id="selectCntPeople" resultType="int">
+		SELECT COUNT(surv_man_no) 
+		FROM survey_people 
+		WHERE surv_answer = 'E402' 
+		AND surv_no = #{survNo}
+	</select>
+	
+	
+	<!-- 응답자 구분조회 -->
+	<select id="selectResponse" resultType="PeopleVO">
+		SELECT DISTINCT
+  			  (SELECT COUNT(*) FROM survey_people) AS surv_total
+  			, (SELECT COUNT(*) FROM survey_people WHERE surv_answer = 'E402') AS surv_response
+  		FROM survey_people 
+  		WHERE surv_no = #{survNo}
+	</select>
+	
+	<!-- surveyChart 바차트 통계 -->
+	<select id="selectBarChart" resultType="map">
+		SELECT all_cnt                     	  AS "allCnt"
+				, stu_cnt     				  AS "stuCnt" 
+	 			, par_cnt     				  AS "parCnt"
+	 			, all_res_cnt 				  AS "allResCnt" 
+	 			, stu_res_cnt				  AS "stuResCnt" 
+	 			, par_res_cnt 				  AS "parResCnt"
+				, (CASE WHEN all_cnt = 0 THEN 0 ELSE all_res_cnt / all_cnt * 100 END) AS "allPercent" 
+				, (CASE WHEN stu_cnt = 0 THEN 0 ELSE stu_res_cnt / stu_cnt * 100 END) AS "stuPercent"
+				, (CASE WHEN par_cnt = 0 THEN 0 ELSE par_res_cnt / par_cnt * 100 END) AS "parPercent"
+		FROM (
+				SELECT  COUNT(*) AS all_cnt
+						, COUNT(CASE WHEN account_type = 'E501' THEN 1 ELSE NULL END) AS stu_cnt 
+		        		, COUNT(CASE WHEN account_type = 'E502' THEN 1 ELSE null END) AS par_cnt
+		        		, COUNT(CASE WHEN surv_answer = 'E402' THEN 1 ELSE NULL END)  AS all_res_cnt 
+		        		, COUNT(CASE WHEN account_type = 'E501' AND surv_answer = 'E402' THEN 1 ELSE NULL END) AS stu_res_cnt 
+		        		, COUNT(CASE WHEN account_type = 'E502' AND surv_answer = 'E402' THEN 1 ELSE NULL END) AS par_res_cnt
+				FROM survey_people 
+				WHERE surv_no = #{survNo}
+			) s
+	</select>
+	
+	<insert id="insertPeople" parameterType="PeopleVO">
+		<selectKey keyProperty="survManNo"
+					resultType="int"
+					order="BEFORE">
+			SELECT NVL(MAX(surv_man_no), 0) + 1 FROM survey_people
+		</selectKey>
+		INSERT INTO survey_people
+				(
+					surv_man_no
+					, surv_no
+					, member_id
+					, member_name
+					, account_type
+				)
+		VALUES 
+				(
+				 	#{survManNo}
+				 	, #{survNo}
+				 	, #{memberId}
+				 	, #{memberName}
+				 	, #{accountType}	
+				)
+	</insert>
+	
+	<update id="updatePeople" parameterType="PeopleVO">
+		UPDATE survey_people
+		<set>
+			<if test="survAnswer != null and !survAnswer.equals('')">
+				surv_answer = #{survAnswer},
+			</if>
+			<if test="accountType != null and !accountType.equals('')">
+				account_type = #{accountType}
+			</if>
+		</set>
+		WHERE surv_no = #{survNo} AND member_id = #{memberId}
+	</update>
+	
+	<delete id="deletePeople" parameterType="int">
+		DELETE 
+		FROM survey_people
+		WHERE surv_no = #{surv_no}
+	</delete>
+</mapper>

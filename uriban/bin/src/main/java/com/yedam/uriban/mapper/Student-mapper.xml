@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yedam.uriban.mapper.StudentMapper">
+
+	<select id="selectStudentAll" resultType="StudentVO">
+		SELECT student_no
+		,class_id
+		,student_id
+		,student_email
+		,student_name
+		,birthday
+		,student_img
+		,student_sex
+		,remark
+		,allergy
+		FROM student_manage
+		ORDER BY student_no
+	</select>
+
+	<!-- 단건조회 -->
+	<select id="selectStudentInfo" resultType="StudentVO">
+		SELECT student_no
+		,class_id
+		,student_id
+		,student_email
+		,student_name
+		,birthday
+		,student_img
+		,student_sex
+		,remark
+		,allergy
+		FROM
+		student_manage
+		WHERE student_no =
+		#{studentNo}
+	</select>
+
+	<!-- 등록 -->
+	<insert id="insertStudent" parameterType="StudentVO">
+		<selectKey keyProperty="studentNo" resultType="String"
+			order="BEFORE">
+			SELECT LPAD(NVL(MAX(student_no),0)+1,3,'0')
+			FROM student
+		</selectKey>
+		INSERT INTO student_manage(
+		student_no
+		,class_id
+		,student_name
+		,student_id
+		,student_email
+		,birthday
+		,student_sex
+		<if test="image!=null and image.equals('')">
+			,student_img
+		</if>
+		,remark
+		,allergy
+		)
+		VALUES
+		(
+		#{studentNo}
+		#{classId}
+		#{studentName}
+		#{studentId}
+		#{studentEmail}
+		#{birthday}
+		#{studentSex}
+		<if test="image!=null and image.equals('')">
+			#{studentImg}
+		</if>
+		#{remark}
+		#{allergy}
+		)
+
+	</insert>
+	<!-- 업데이트 -->
+	<update id="updateStudent" parameterType="StudentVO">
+		UPDATE student_manage
+		<set>
+			<if test="studentNo != null">
+				student_no = #{studentNo},
+			</if>
+			<if test="studentEmail != null">
+				student_email = #{studentEmail},
+			</if>
+			<if test="studentName != null">
+				student_name = #{studentName},
+			</if>
+			<if test="birthday != null">
+				birthday = #{birthday},
+			</if>
+			<if test="studentSex != null">
+				student_sex = #{studentSex}
+			</if>
+			<if test="remark != null">
+				remark = #{remark}
+			</if>
+			<if test="allergy != null">
+				allergy = #{allergy}
+			</if>
+		</set>
+		WHERE student_no = #{studentNo}
+	</update>
+
+	<!-- 삭제 -->
+	<delete id="deleteStudent" parameterType="int">
+		DELETE FROM
+		student_manage
+		WHERE student_no = #{studentNo}
+	</delete>
+</mapper>
+ 
